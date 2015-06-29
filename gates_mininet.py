@@ -1,5 +1,11 @@
-# Model of Gates Network
-# June, 2015
+# Model of Gates Network for Mininet
+# Craig Riecke, CoSciN Developer/Analyst, June, 2015
+#
+# To make this work:
+# - You need to be at Mininet > 2.2, which you should build from source if on Ubuntu 14.04 (the
+#   latest dpkg is Mininet 2.1).  This will make the links use the right ports instead of 
+#   sequentially renumbering them
+# - You need vlan package, via "sudo apt-get install vlan"
 
 import re
 import sys
@@ -11,125 +17,127 @@ from mininet.node import Host, OVSSwitch, RemoteController
 from mininet.cli import CLI
 from mininet.net import Mininet
 
+# Mercilessly copied from https://github.com/mininet/mininet/blob/master/examples/vlanhost.py
+#
+class VLANHost( Host ):
+  "Host connected to VLAN interface"
+
+  def config( self, vlan=100, **params ):
+    """Configure VLANHost according to (optional) parameters:
+       vlan: VLAN ID for default interface"""
+
+    r = super( VLANHost, self ).config( **params )
+
+    intf = self.defaultIntf()
+    # remove IP from default, "physical" interface
+    self.cmd( 'ifconfig %s inet 0' % intf )
+    # create VLAN interface
+    self.cmd( 'vconfig add %s %d' % ( intf, vlan ) )
+    # assign the host's IP to the VLAN interface
+    self.cmd( 'ifconfig %s.%d inet %s' % ( intf, vlan, params['ip'] ) )
+    # update the intf name and host's intf map
+    newName = '%s.%d' % ( intf, vlan )
+    # update the (Mininet) interface to refer to VLAN interface name
+    intf.name = newName
+    # add VLAN interface to host's name to intf map
+    self.nameToIntf[ newName ] = intf
+
+    return r
+
+
 def start(ip="127.0.0.1",port=6633):
 
     ctrlr = lambda n: RemoteController(n, ip=ip, port=port, inNamespace=False)
-    net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=False, listenPort=6634)
+    net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=False)
     c1 = net.addController('c1')
 
-    ####### End of static Mininet prologue ######
+    # Switches in Gates G27.  Main distribution to servers and outside world, plus basement labs 
+    # NOTE: it would be really nice if we can name these descriptively for Mininet instead of s1, etc.
+    s_eor = net.addSwitch('s1') # ('g27/r01/s4810a')
+    s_r1 = net.addSwitch('s2') # ('g27/r01/s4810b')
+    s_r2 = net.addSwitch('s3') # ('g27/r02/s4820a')
+    s_r3 = net.addSwitch('s4') # ('g27/r03/s4820a')
+    s_r4 = net.addSwitch('s5') # ('g27/r04/s4820a')
+    s_r5 = net.addSwitch('s6') # ('g27/r05/s4820a')
+    s_r6 = net.addSwitch('s7') # ('g27/r06/s4820a')
+    s_r7 = net.addSwitch('s8') # ('g27/r07/s4820a')
+    s_r8 = net.addSwitch('s9') # ('g27/r08/s4820a')
+    s_r9 = net.addSwitch('s10') # ('g27/r09/s4820a')
+    s_r10 = net.addSwitch('s11') # ('g27/r10/s4820a')
+    s_r11 = net.addSwitch('s12') # ('g27/r11/s4820a')
+    s_r12 = net.addSwitch('s13') # ('g27/r12/s4820a')
+    s_r13 = net.addSwitch('s14') # ('g27/r13/s4820a')
+    s_r14 = net.addSwitch('s15') # ('g27/r14/s4820a')
+    s_r15 = net.addSwitch('s16') # ('g27/r15/s4820a')
+    # switches in r16 and r17 are not used.  s_r18 is currently orphaned on the network (no links)
+    s_r18 = net.addSwitch('s17') # ('g27/r18/s4820a')
 
-    s1 = net.addSwitch('s1')
-    s2 = net.addSwitch('s2')
-    s3 = net.addSwitch('s3')
-    s4 = net.addSwitch('s4')
-    s5 = net.addSwitch('s5')
-    s6 = net.addSwitch('s6')
-    s7 = net.addSwitch('s7')
-    s8 = net.addSwitch('s8')
-    s9 = net.addSwitch('s9')
-    s10 = net.addSwitch('s10')
-    s11 = net.addSwitch('s11')
-    s12 = net.addSwitch('s12')
-    s13 = net.addSwitch('s13')
-    s14 = net.addSwitch('s14')
-    s15 = net.addSwitch('s15')
-    s16 = net.addSwitch('s16')
-    s17 = net.addSwitch('s17')
-    s18 = net.addSwitch('s18')
-    s19 = net.addSwitch('s19')
-    s20 = net.addSwitch('s20')
-    s21 = net.addSwitch('s21')
-    s22 = net.addSwitch('s22')
-    s23 = net.addSwitch('s23')
-    s24 = net.addSwitch('s24')
-    s25 = net.addSwitch('s25')
-    s26 = net.addSwitch('s26')
-    s27 = net.addSwitch('s27')
-    s28 = net.addSwitch('s28')
-    h1 = net.addHost('h1', mac='00:00:01:00:00:11', ip='10.0.0.101')
-    h2 = net.addHost('h2', mac='00:00:01:00:00:12', ip='10.0.0.102')
-    h3 = net.addHost('h3', mac='00:00:01:00:00:13', ip='10.0.0.103')
-    h4 = net.addHost('h4', mac='00:00:01:00:00:14', ip='10.0.0.104')
-    h5 = net.addHost('h5', mac='00:00:01:00:00:15', ip='10.0.0.105')
-    h6 = net.addHost('h6', mac='00:00:01:00:00:16', ip='10.0.0.106')
-    h7 = net.addHost('h7', mac='00:00:01:00:00:17', ip='10.0.0.107')
-    h8 = net.addHost('h8', mac='00:00:01:00:00:18', ip='10.0.0.108')
-    h9 = net.addHost('h9', mac='00:00:01:00:00:19', ip='10.0.0.109')
-    h10 = net.addHost('h10', mac='00:00:01:00:00:20', ip='10.0.0.110')
-    h11 = net.addHost('h11', mac='00:00:01:00:00:21', ip='10.0.0.111')
-    h12 = net.addHost('h12', mac='00:00:01:00:00:22', ip='10.0.0.112')
-    h13 = net.addHost('h13', mac='00:00:01:00:00:23', ip='10.0.0.113')
-    h14 = net.addHost('h14', mac='00:00:01:00:00:24', ip='10.0.0.114')
-    h15 = net.addHost('h15', mac='00:00:01:00:00:25', ip='10.0.0.115')
-    h16 = net.addHost('h16', mac='00:00:01:00:00:26', ip='10.0.0.116')
-    h17 = net.addHost('h17', mac='00:00:01:00:00:27', ip='10.0.0.117')
-    h18 = net.addHost('h18', mac='00:00:01:00:00:28', ip='10.0.0.118')
-    h19 = net.addHost('h19', mac='00:00:01:00:00:29', ip='10.0.0.119')
-    h20 = net.addHost('h20', mac='00:00:01:00:00:30', ip='10.0.0.120')
-    h21 = net.addHost('h21', mac='00:00:01:00:00:31', ip='10.0.0.121')
-    h22 = net.addHost('h22', mac='00:00:01:00:00:32', ip='10.0.0.122')
-    h23 = net.addHost('h23', mac='00:00:01:00:00:33', ip='10.0.0.123')
-    h24 = net.addHost('h24', mac='00:00:01:00:00:34', ip='10.0.0.124')
-    h25 = net.addHost('h25', mac='00:00:01:00:00:35', ip='10.0.0.125')
-    h26 = net.addHost('h26', mac='00:00:01:00:00:36', ip='10.0.0.126')
-    h27 = net.addHost('h27', mac='00:00:01:00:00:37', ip='10.0.0.127')
-    h28 = net.addHost('h28', mac='00:00:01:00:00:38', ip='10.0.0.128')
-    net.addLink(s1, s7, 1, 6)
-    net.addLink(s1, h1, 2, 0)
-    net.addLink(s2, s7, 1, 5)
-    net.addLink(s2, h2, 2, 0)
-    net.addLink(s3, s7, 1, 1)
-    net.addLink(s3, h3, 2, 0)
-    net.addLink(s4, s6, 5, 1)
-    net.addLink(s4, s10, 1, 1)
-    net.addLink(s4, s16, 4, 1)
-    net.addLink(s4, s21, 2, 1)
-    net.addLink(s4, s22, 7, 1)
-    net.addLink(s4, s24, 3, 1)
-    net.addLink(s4, s28, 6, 4)
-    net.addLink(s4, h4, 8, 0)
-    net.addLink(s5, s28, 1, 1)
-    net.addLink(s5, h5, 2, 0)
-    net.addLink(s6, h6, 2, 0)
-    net.addLink(s7, s8, 12, 1)
-    net.addLink(s7, s11, 7, 1)
-    net.addLink(s7, s12, 3, 1)
-    net.addLink(s7, s14, 2, 1)
-    net.addLink(s7, s17, 9, 1)
-    net.addLink(s7, s18, 8, 1)
-    net.addLink(s7, s19, 11, 1)
-    net.addLink(s7, s20, 10, 1)
-    net.addLink(s7, s25, 13, 1)
-    net.addLink(s7, s26, 4, 1)
-    net.addLink(s7, s28, 14, 7)
-    net.addLink(s7, h7, 15, 0)
-    net.addLink(s8, h8, 2, 0)
-    net.addLink(s9, s28, 1, 2)
-    net.addLink(s9, h9, 2, 0)
-    net.addLink(s10, h10, 2, 0)
-    net.addLink(s11, h11, 2, 0)
-    net.addLink(s12, h12, 2, 0)
-    net.addLink(s13, s28, 1, 6)
-    net.addLink(s13, h13, 2, 0)
-    net.addLink(s14, h14, 2, 0)
-    net.addLink(s15, s23, 1, 1)
-    net.addLink(s15, s28, 2, 5)
-    net.addLink(s15, h15, 3, 0)
-    net.addLink(s16, h16, 2, 0)
-    net.addLink(s17, h17, 2, 0)
-    net.addLink(s18, h18, 2, 0)
-    net.addLink(s19, h19, 2, 0)
-    net.addLink(s20, h20, 2, 0)
-    net.addLink(s21, h21, 2, 0)
-    net.addLink(s22, h22, 2, 0)
-    net.addLink(s23, h23, 2, 0)
-    net.addLink(s24, h24, 2, 0)
-    net.addLink(s25, h25, 2, 0)
-    net.addLink(s26, h26, 2, 0)
-    net.addLink(s27, s28, 1, 3)
-    net.addLink(s27, h27, 2, 0)
-    net.addLink(s28, h28, 8, 0)
+    # Distribution to wall jacks on floors 1-4
+    s_bdf = net.addSwitch('s18') # ('g126/r02/s4810a')
+    s_f1 = net.addSwitch('s19') # ('g126/r02/s4810b')
+    s_f2 = net.addSwitch('s20') # ('g234/r02/s4810a')
+    s_f3a = net.addSwitch('s21') # ('g348/r02/s4810a')
+    s_f3b = net.addSwitch('s22') # ('g302b/r02/s4810a')
+    s_f4 = net.addSwitch('s23') # ('g448a/r02/s4810a')
+
+    # SysLab
+    s_syslab_eor = net.addSwitch('s24') # ('g444/r00/s4820a')
+    s_syslab_r3 = net.addSwitch('s25') # ('g444/r03/s4820a')
+    s_syslab_r5a = net.addSwitch('s26') # ('g444/r05/s4810a')
+    s_syslab_r5b = net.addSwitch('s27') # ('g444/r05/s4820a')
+    s_syslab_r6 = net.addSwitch('s28') # ('g444/r06/s4820a')
+    s_syslab_r7 = net.addSwitch('s29') # ('g444/r07/s4820a')
+    s_syslab_out = net.addSwitch('s30') # ('g999/r99/s4820a')
+
+    # TP-Link running Openflow, I think
+    s_softswitch = net.addSwitch('s31')# ('g999/r99/s4820a')
+
+    # Links between switches.  
+    # Basement switches are wired in a star topology
+    net.addLink(s_eor, s_r2, 3, 49 )
+    net.addLink(s_eor, s_r3, 5, 49 )
+    net.addLink(s_eor, s_r4, 7, 49 )
+    net.addLink(s_eor, s_r5, 9, 49 )
+    net.addLink(s_eor, s_r6, 11, 49 )
+    net.addLink(s_eor, s_r7, 13, 49 )
+    net.addLink(s_eor, s_r8, 15, 49 )
+    net.addLink(s_eor, s_r9, 17, 49 )
+    net.addLink(s_eor, s_r10, 19, 49 )
+    net.addLink(s_eor, s_r11, 21, 49 )
+    net.addLink(s_eor, s_r12, 23, 49 )
+    net.addLink(s_eor, s_r13, 25, 49 )
+    net.addLink(s_eor, s_r14, 27, 49 )
+    net.addLink(s_eor, s_r15, 29, 49 )
+
+    # Floor switches are wired in a star as well
+    net.addLink(s_bdf, s_f1, 9, 47 )
+    net.addLink(s_bdf, s_f2, 17, 47 )
+    net.addLink(s_bdf, s_f3a, 23, 47 )
+    net.addLink(s_bdf, s_f3b, 31, 47 )
+    net.addLink(s_bdf, s_f4, 37, 47 )
+
+    # And SysLab switches
+    net.addLink(s_syslab_eor, s_syslab_r3, 21, 49 )
+    net.addLink(s_syslab_eor, s_syslab_r5a, 19, 49 )
+    net.addLink(s_syslab_eor, s_syslab_r5b, 41, 49 )
+    net.addLink(s_syslab_eor, s_syslab_r6, 29, 49 )
+    net.addLink(s_syslab_eor, s_syslab_r7, 31, 49 )
+    net.addLink(s_syslab_eor, s_syslab_out, 9, 49 )
+
+    # Links between stars
+    net.addLink(s_eor, s_bdf, 47, 47 )
+    net.addLink(s_bdf, s_syslab_eor, 45, 47 )
+ 
+    # An odd duck
+    net.addLink(s_syslab_out, s_softswitch, 34, 1 )
+
+    # Only one host and an Internet Router disguised as a host for now (because it's not part of the OF network)
+    h0 = net.addHost('h0', cls=VLANHost, mac='00:00:01:00:00:10', ip='128.253.154.0', vlan=1356)
+    h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='128.253.154.100', vlan=1356)
+    # h0 = net.addHost('h0', mac='00:00:01:00:00:10', ip='128.253.154.0', vlan=1356)
+    # h1 = net.addHost('h1', mac='00:00:01:00:00:11', ip='128.253.154.100', vlan=1356)
+    net.addLink(s_bdf, h0, 49, 0)
+    net.addLink(s_f3a, h1, 1, 0)
 
     ###### Start of static Mininet epilogue ######
     # Set up logging etc.
@@ -138,7 +146,6 @@ def start(ip="127.0.0.1",port=6633):
 
     # Start the network and prime other ARP caches
     net.start()
-    net.staticArp()
 
     # Enter CLI mode
     output("Network ready\n")
