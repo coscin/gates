@@ -25,38 +25,94 @@ class LearningSwitchApp(frenetic.App):
   hosts = {}
 
   ethernet_broadcast = "ff:ff:ff:ff:ff:ff"
+  vlan = 1356
+
+  # This maps switch_ids from Dell (Openflow datapath id's) to "nice" names 
+  switch_labels = {
+    1125908103288861: "s_eor",
+    1125908103297789: "s_r1",
+    1284990276223830: "s_r2",
+    1284990276223836: "s_r3",
+    1284990276224367: "s_r4",
+    1284990276224415: "s_r5",
+    1284990276223782: "s_r6",
+    1284990276224424: "s_r7",
+    1284990276224331: "s_r8",
+    1284990276224418: "s_r9",
+    1284990276224328: "s_r10",
+    1284990276268919: "s_r11",
+    1284990276224409: "s_r12",
+    1284990276224322: "s_r13",
+    1284990276224385: "s_r14",
+    1284990276224421: "s_r15",
+    1284990276224325: "s_r18",
+
+    1125908108270984: "s_bdf",
+    1125908103260016: "s_f1",
+    1125908103297849: "s_f2",
+    1125908103297804: "s_f3a",
+    1125908103297660: "s_f3b",
+    1125908103297765: "s_f4",
+
+    1125908103289164: "s_lab_eor",
+    1284990276224316: "s_lab_r3",
+    1284990276223788: "s_lab_r99",
+    1284990276220716: "s_lab_r5",
+    1284990276223779: "s_lab_r6",
+    1284990276223785: "s_lab_r7",
+    1284990276223803: "s_lab_r0",
+
+    1: "s_tplink"
+  }
+  label_switches = {v: k for k, v in switch_labels.items()}
 
   def __init__(self):
     frenetic.App.__init__(self)  
 
   # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table
   def l2_policy(self, switch_id, mac, port_id):
-    return Filter( Test(Switch(switch_id)) & Test(Vlan(1356)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+    return Filter( Test(Switch(self.label_switches[switch_id])) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
 
-  basement_switches = set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17])
-  # Given a switch in the basement, which port on the eor switch goes to it?
-  eor_to_basement_port = {
-    2: 3, 3: 5, 4: 7, 5: 9,
-    6: 11, 7: 13, 8: 15, 9: 17, 10: 19,
-    11: 21, 12: 23, 13: 25, 14: 27, 15: 29
+  basement_switches = { 
+    "s_r1", "s_r2", "s_r3", "s_r4", "s_r5", "s_r6", "s_r7", "s_r8", "s_r9", 
+    "s_r10", "s_r11", "s_r12", "s_r13", "s_r14", "s_r15", "s_r18"
   }
-  floor_switches = set([19, 20, 21, 22, 23])
-  bdf_to_floor_port = { 19: 9, 20: 7, 21: 23, 22: 31, 23: 37 }
-  syslab_switches = set([25, 26, 27, 28, 29, 30])
-  syslab_eor_to_syslab_port = {
-    25: 21, 26: 19, 27: 41, 28: 29, 29: 31, 30: 9
+  # Given a switch in the basement, which port on the eor switch goes to it?  Note: r1, r11 and r18 are disconnected
+  eor_to_basement_ports = {
+    "s_r2": 3,   "s_r3": 5,   "s_r4": 7,   "s_r5": 9,
+    "s_r6": 11,  "s_r7": 13,  "s_r8": 15,  "s_r9": 17,  "s_r10": 19,
+    "s_r12": 23, "s_r13": 25, "s_r14": 27, "s_r15": 29
   }
+  floor_switches = { "s_f1", "s_f2", "s_f3a", "s_f3b", "s_f4" }
+  bdf_to_floor_ports = { "s_f1": 9, "s_f2": 17, "s_f3a": 23, "s_f3b": 31, "s_f4": 37 }
+  lab_switches = { "s_lab_r3", "s_lab_r99", "s_lab_r5", "s_lab_r6", "s_lab_r7", "s_lab_r0" }
+  lab_eor_to_lab_ports = {
+    "s_lab_r3": 21, "s_lab_r99": 19, "s_lab_r5": 41, "s_lab_r6": 29, "s_lab_r7": 31, "s_lab_r0": 9
+  }
+
+  def switch_with_hosts(self, switch_id):
+    "Return true if the given switch has hosts connected to it"
+    return switch_id == "s_tplink" or \
+      switch_id in self.basement_switches or \
+      switch_id in self.floor_switches or \
+      switch_id in self.lab_switches
 
   # Return true if this packet is coming from a host, and not just being routed internally
-  # Note all these rules are installable in the L2 flow tables on the Dell switch
   def edge_packet(self, switch_id, port_id):
-    return ((switch_id in self.basement_switches or switch_id in self.floor_switches or switch_id in self.syslab_switches) \
-      and port_id < 47) \
-      or (switch_id == 18 and port_id == 49) # Rhodes router is a special case.  
+    # This is a special case of s_tplink.  Would it better if it were hooked to up to port 47, but...
+    if switch_id == "s_lab_r0" and port_id == 34:
+      return False
+    if switch_id =='s_tplink' and port_id == 1:
+      return False
+    # Rhodes router is another special case, since it's hooked up to a tree switch
+    if switch_id == 's_bdf' and port_id == 49:
+      return True
+    return self.switch_with_hosts(switch_id) and port_id < 47
 
   def learn(self, switch_id, port_id, mac):
-    print "Learning: "+mac
+    # Don't learn ethernet broadcast or hosts we've already learned before.  
     if mac != self.ethernet_broadcast and mac not in self.hosts:
+      print "Learning: "+mac
       self.hosts[mac] = (switch_id, port_id)
       self.unlearned_incoming_ports.discard( (switch_id, port_id) )
 
@@ -66,7 +122,9 @@ class LearningSwitchApp(frenetic.App):
   def next_hop(self, switch_id, mac):
     print "Computing next hop for "+mac
     if mac not in self.hosts:
-      # This effectively drops the packet.
+      # This effectively drops the packet.  It shouldn't happen if all hosts ask for the Mac address via ARP
+      # first.   TODO: Send out ARP to all unlearned ports to see if any of them are the mac address.  But this is
+      # hard because the responses must come back before the packet is released, and that's far from certain.   
       print "Not found in learning table, so don't know how to route packet.  Dropping."
       return 500
 
@@ -75,29 +133,42 @@ class LearningSwitchApp(frenetic.App):
       return dest_port_id
 
     # If we're not in a star hub, move to the closest star hub
-    if switch_id in self.basement_switches or switch_id in self.syslab_switches:
+    if switch_id in self.basement_switches or switch_id in self.lab_switches:
       return 49
     if switch_id in self.floor_switches:
       return 47
 
     # If we're in a star hub, move to the destination switch or one star-hub closer
     if dest_switch_id in self.basement_switches:
-      if switch_id == 1:  # eor
-        return self.eor_to_basement_port[dest_switch_id]
-      else: # bdf or syslab_eor
+      if switch_id == 's_eor':
+        return self.eor_to_basement_ports[dest_switch_id]
+      else: # bdf or lab_eor
         return 47
 
     if dest_switch_id in self.floor_switches:
-      if switch_id == 18:  # bdf
-        return self.bdf_to_floor_port[dest_switch_id]
+      if switch_id == 's_bdf':
+        return self.bdf_to_floor_ports[dest_switch_id]
       else: 
         return 47
 
-    if dest_switch_id in self.syslab_switches:
-      if switch_id == 24:  # syslab_eor
-        return self.syslab_eor_to_syslab_port[dest_switch_id]
+    if dest_switch_id in self.lab_switches:
+      if switch_id == 's_lab_eor':
+        return self.lab_eor_to_lab_portsi[dest_switch_id]
       else: 
         return 47
+
+    if dest_switch_id == 's_tplink':
+      if switch_id == 's_bdf':
+        return 45
+      if switch_id == 's_lab_eor':
+        return 9
+      if switch_id == 's_lab_r0':
+        return 34
+      else:
+        return 47
+
+    # Should not happen.  Drop packet if we reach this point.  
+    return 0
 
   def policies_for_mac(self, switch_id, port_id, mac):
     this_switch_policy = self.l2_policy(switch_id, mac, port_id)
@@ -108,39 +179,48 @@ class LearningSwitchApp(frenetic.App):
     floor_policies = [
       self.l2_policy(sw, mac, 47) for sw in self.floor_switches - set([switch_id])
     ]
-    syslab_policies = [
-      self.l2_policy(sw, mac, 49) for sw in self.syslab_switches - set([switch_id])
+    lab_policies = [
+      self.l2_policy(sw, mac, 49) for sw in self.lab_switches - set([switch_id])
     ]
 
     # Then distribution from the stars to the right one depends on where the mac is
+    # Default policies
+    eor_policy = self.l2_policy('s_eor', mac, 47)
+    bdf_policy = self.l2_policy('s_bdf', mac, 47)
+    lab_eor_policy = self.l2_policy('s_lab_eor', mac, 47)
+    tplink_policy = self.l2_policy('s_tplink', mac, 1)
+
     if switch_id in self.basement_switches:
-      eor_policy = self.l2_policy(1, mac, self.eor_to_basement_port[switch_id])
-      bdf_policy = self.l2_policy(18, mac, 47)
-      syslab_eor_policy = self.l2_policy(24, mac, 47)
+      eor_policy = self.l2_policy('s_eor', mac, self.eor_to_basement_ports[switch_id])
     elif switch_id in self.floor_switches:
-      eor_policy = self.l2_policy(1, mac, 47)
-      bdf_policy = self.l2_policy(18, mac, self.bdf_to_floor_port[switch_id])
-      syslab_eor_policy = self.l2_policy(24, mac, 47)
-    elif switch_id in self.syslab_switches:
-      eor_policy = self.l2_policy(1, mac, 47)
-      bdf_policy = self.l2_policy(18, mac, 47)
-      syslab_eor_policy = self.l2_policy(24, mac, self.syslab_eor_to_syslab_port[switch_id])
-    elif switch_id == 18:   # BDF, which hooks directly to Rhodes Internet Router
-      eor_policy = self.l2_policy(1, mac, 47)
-      bdf_policy = self.l2_policy(18, mac, 47)
-      syslab_eor_policy = self.l2_policy(24, mac, 47)
+      bdf_policy = self.l2_policy('s_bdf', mac, self.bdf_to_floor_ports[switch_id])
+    elif switch_id in self.lab_switches:
+      lab_eor_policy = self.l2_policy('s_lab_eor', mac, self.lab_eor_to_lab_ports[switch_id])
+    elif switch_id == 's_bdf':   # BDF hooks directly to Rhodes Internet Router
+      # Obviously there is no bdf policy, because the router is hooked up bdf.  But one is expected,
+      # so we use the switch policy, and that'll get factored out later
+      bdf_policy = this_switch_policy
+    elif switch_id == 's_tplink':   # Another special case
+      bdf_policy = self.l2_policy('s_bdf', mac, 45)
+      lab_eor_policy = self.l2_policy('s_lab_eor', mac, 9)
+      # The lab policies need to be rewritten to exclude s_lab_r0, which the tplink is connected to
+      lab_policies = [
+        self.l2_policy(sw, mac, 49) for sw in self.lab_switches - { "s_lab_r0" } 
+      ]
+      lab_policies = lab_policies + [ self.l2_policy("s_lab_r0", mac, 34) ]
+      tplink_policy = this_switch_policy
     else:
       print "Packet from unexpected switch "+str(switch_id)+" port "+str(port_id)+" mac "+mac
 
     return Union([this_switch_policy] + 
-      basement_policies + floor_policies + syslab_policies + 
-      [eor_policy, bdf_policy, syslab_eor_policy])
+      basement_policies + floor_policies + lab_policies + 
+      [eor_policy, bdf_policy, lab_eor_policy, tplink_policy])
 
   def send_to_controller(self):
     return Mod(Location(Pipe("learning_switch_app")))
 
   def incoming_unlearned_port_pred(self):
-    return Or([Test(Switch(sw)) & Test(Location(Physical(p))) for (sw,p) in self.unlearned_incoming_ports])
+    return Or([Test(Switch(self.label_switches[sw])) & Test(Location(Physical(p))) for (sw,p) in self.unlearned_incoming_ports])
 
   def all_incoming_ports(self):
     host_ports = set()
@@ -151,7 +231,7 @@ class LearningSwitchApp(frenetic.App):
     return host_ports
 
   def dest_mac_learned_pred(self):
-    return Or([ Test(Vlan(1356)) & Test(EthDst(mac)) for mac in self.hosts])
+    return Or([ Test(Vlan(self.vlan)) & Test(EthDst(mac)) for mac in self.hosts])
 
   def next_hop_policies(self):
     # This constructs m * s policies, where m = number of macs learned and s = number of switches
@@ -174,32 +254,54 @@ class LearningSwitchApp(frenetic.App):
   # Send payload to all ports except the ingress port.  TODO: Only send it to ports on the spanning tree.
   def flood_all_ports(self,switch_id, port_id, payload):
     output_actions = [Output(Physical(p)) for p in self.switches[switch_id] if p != port_id ]
-    self.pkt_out(switch_id, payload, output_actions)
+    # Only bother to send the packet out if there are ports to send it out on.
+    if output_actions:
+      self.pkt_out(self.label_switches[switch_id], payload, output_actions)
 
   def connected(self):
     def handle_current_switches(switches):
-      self.switches = switches
+      # Convert ugly switch id to nice one
+      self.switches = { self.switch_labels[dpid]: ports for dpid, ports in switches.items() }
       self.unlearned_incoming_ports = self.all_incoming_ports()
       self.update(self.policy())
     self.current_switches(callback=handle_current_switches) 
 
-  def packet_in(self, switch_id, port_id, payload):
+  def packet_in(self, dpid, port_id, payload):
     pkt = packet.Packet(array.array('b', payload.data))
     p = get(pkt, 'ethernet')
+    switch_id = self.switch_labels[dpid]
     print "Received "+p.src+" -> ("+str(switch_id)+", "+str(port_id)+") -> "+p.dst
     mac = p.src
     if mac != self.ethernet_broadcast and mac not in self.hosts and self.edge_packet(switch_id, port_id):
       self.learn(switch_id, port_id, mac)
       self.update(self.policy())
-    # TODO: Actually send the packet out to the new hop.  Don't assume the rules are there.
     # If this is a broadcast packet, send it to all destinations that aren't the ingress port.  
     if p.dst == self.ethernet_broadcast:
       self.flood_all_ports(switch_id, port_id, payload)
     else:
       # If it's a unicast packet, send it to the next hop
-      self.pkt_out(switch_id, payload, [Output(Physical(self.next_hop(switch_id, p.dst)))])
+      next_hop_port = self.next_hop(switch_id, p.dst)
+      print "Sending out "+switch_id+"/"+str(next_hop_port)
+      self.pkt_out(dpid, payload, [Output(Physical(next_hop_port))])
 
-  # TODO: Handle moves from one port to another ... maybe
+  def unlearn_mac_on_port(self, switch_id, port_id):
+    orphaned_macs = filter(lambda mac: self.hosts[mac][0] == switch_id and self.hosts[mac][1] == port_id, self.hosts)
+    for m in orphaned_macs:
+      del self.hosts[m]
 
+  def port_up(self,dpid, port_id):
+    switch_id = self.switch_labels[dpid]
+    # If port comes up, remove any learned macs on it (probably won't be any) and
+    # add it to the list of unlearned ports.
+    self.unlearn_mac_on_port(switch_id, port_id)
+    self.unlearned_incoming_ports.add( (switch_id, port_id) )
+
+  def port_down(self,dpid, port_id):
+    switch_id = self.switch_labels[dpid]
+    # If port goes down, remove any learned macs on it
+    self.unlearn_mac_on_port(switch_id, port_id)
+
+  # Currently if switches come up or down, just note them in the log.  Unlearning their details would be a waste
+  # in a network with no loops because the edges connected to that switch won't be able to communicate anyway.  
 app = LearningSwitchApp()
 app.start_event_loop()
