@@ -27,7 +27,7 @@ class LearningSwitchApp(frenetic.App):
   ethernet_broadcast = "ff:ff:ff:ff:ff:ff"
   vlan = 1356
 
-  # This maps switch_ids from Dell (Openflow datapath id's) to "nice" names 
+  # This maps datapath id's from Dell to "nice" readable switch_id's 
   switch_labels = {
     1125908103288861: "s_eor",
     1125908103297789: "s_r1",
@@ -69,9 +69,15 @@ class LearningSwitchApp(frenetic.App):
   def __init__(self):
     frenetic.App.__init__(self)  
 
+  def dpid_to_switch_id(self,dpid):
+    return self.switch_labels[dpid]
+
+  def switch_id_to_dpid(self,switch_id):
+    return self.label_switches[switch_id]
+
   # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table
   def l2_policy(self, switch_id, mac, port_id):
-    return Filter( Test(Switch(self.label_switches[switch_id])) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+    return Filter( Test(Switch(self.switch_id_to_dpid(switch_id)) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
 
   basement_switches = { 
     "s_r1", "s_r2", "s_r3", "s_r4", "s_r5", "s_r6", "s_r7", "s_r8", "s_r9", 
@@ -105,7 +111,7 @@ class LearningSwitchApp(frenetic.App):
     if switch_id =='s_tplink' and port_id == 1:
       return False
     # Rhodes router is another special case, since it's hooked up to a tree switch
-    if switch_id == 's_bdf' and port_id == 49:
+    if switch_id == 's_bdf' and port_id == 1:
       return True
     return self.switch_with_hosts(switch_id) and port_id < 47
 
@@ -118,7 +124,7 @@ class LearningSwitchApp(frenetic.App):
 
   # Return port number that packet mac on switch_id should travel out.  Assumes destination switch and port
   # is in hosts, as all learned macs are.  TODO: This is just a clever rearrangement of policies_for_mac
-  # 
+  # Note: this is ONLY used for unicast packets, never broadcast
   def next_hop(self, switch_id, mac):
     print "Computing next hop for "+mac
     if mac not in self.hosts:
@@ -170,6 +176,7 @@ class LearningSwitchApp(frenetic.App):
     # Should not happen.  Drop packet if we reach this point.  
     return 0
 
+  # Generate a set of NetKAT policies for unicast packets to mac.  Doesn't include broadcasts.  
   def policies_for_mac(self, switch_id, port_id, mac):
     this_switch_policy = self.l2_policy(switch_id, mac, port_id)
     # Any switch communicating with this new mac should filter it to the top of the star first 
@@ -220,7 +227,7 @@ class LearningSwitchApp(frenetic.App):
     return Mod(Location(Pipe("learning_switch_app")))
 
   def incoming_unlearned_port_pred(self):
-    return Or([Test(Switch(self.label_switches[sw])) & Test(Location(Physical(p))) for (sw,p) in self.unlearned_incoming_ports])
+    return Or([Test(Switch(self.switch_id_to_dpid(sw))) & Test(Location(Physical(p))) for (sw,p) in self.unlearned_incoming_ports])
 
   def all_incoming_ports(self):
     host_ports = set()
@@ -256,12 +263,12 @@ class LearningSwitchApp(frenetic.App):
     output_actions = [Output(Physical(p)) for p in self.switches[switch_id] if p != port_id ]
     # Only bother to send the packet out if there are ports to send it out on.
     if output_actions:
-      self.pkt_out(self.label_switches[switch_id], payload, output_actions)
+      self.pkt_out(self.switch_id_to_dpid(switch_id), payload, output_actions)
 
   def connected(self):
     def handle_current_switches(switches):
       # Convert ugly switch id to nice one
-      self.switches = { self.switch_labels[dpid]: ports for dpid, ports in switches.items() }
+      self.switches = { self.dpid_to_switch_id(dpid): ports for dpid, ports in switches.items() }
       self.unlearned_incoming_ports = self.all_incoming_ports()
       self.update(self.policy())
     self.current_switches(callback=handle_current_switches) 
@@ -269,7 +276,7 @@ class LearningSwitchApp(frenetic.App):
   def packet_in(self, dpid, port_id, payload):
     pkt = packet.Packet(array.array('b', payload.data))
     p = get(pkt, 'ethernet')
-    switch_id = self.switch_labels[dpid]
+    switch_id = self.dpid_to_switch_id(dpid)
     print "Received "+p.src+" -> ("+str(switch_id)+", "+str(port_id)+") -> "+p.dst
     mac = p.src
     if mac != self.ethernet_broadcast and mac not in self.hosts and self.edge_packet(switch_id, port_id):
@@ -290,16 +297,30 @@ class LearningSwitchApp(frenetic.App):
       del self.hosts[m]
 
   def port_up(self,dpid, port_id):
-    switch_id = self.switch_labels[dpid]
+    switch_id = self.dpid_to_switch_id(dpid)
     # If port comes up, remove any learned macs on it (probably won't be any) and
     # add it to the list of unlearned ports.
     self.unlearn_mac_on_port(switch_id, port_id)
     self.unlearned_incoming_ports.add( (switch_id, port_id) )
 
   def port_down(self,dpid, port_id):
-    switch_id = self.switch_labels[dpid]
+    switch_id = self.dpid_to_switch_id(dpid)
     # If port goes down, remove any learned macs on it
     self.unlearn_mac_on_port(switch_id, port_id)
+
+  def switch_up(self,dpid,ports):
+    switch_id = self.dpid_to_switch_id(dpid)
+    print "Switch Up: "+switch_id
+    # If we've seen this switch before, just return.  Otherwise add the ports to unlearned. 
+    if switch_id in self.switches:
+      return
+    for port_id in ports:
+      if self.edge_packet(switch_id, port_id):
+        self.unlearned_incoming_ports.add( (switch_id, port_id) )
+
+  def switch_down(self,dpid,ports):
+    switch_id = self.dpid_to_switch_id(dpid)
+    print "Switch Down: "+switch_id
 
   # Currently if switches come up or down, just note them in the log.  Unlearning their details would be a waste
   # in a network with no loops because the edges connected to that switch won't be able to communicate anyway.  

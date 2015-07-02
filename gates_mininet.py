@@ -167,7 +167,7 @@ def start(ip="127.0.0.1",port=6633):
 
     # Only one host and an Internet Router disguised as a host for now (because it's not part of the OF network)
     h0 = net.addHost('h0', cls=VLANHost, mac='00:00:01:00:00:10', ip='128.253.154.0', vlan=1356)
-    net.addLink(s_bdf, h0, 49, 0)
+    net.addLink(s_bdf, h0, 1, 0)
 
     # To test DHCP functionality, ucnomment this line and comment out the fixed IP line.  Then when mininet
     # starts you issue:
