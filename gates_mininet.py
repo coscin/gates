@@ -14,6 +14,8 @@
 
 import re
 import sys
+from networkx import *
+import pygraphviz as pgv
 
 # Mininet imports
 from mininet.log import lg, info, error, debug, output
@@ -21,6 +23,7 @@ from mininet.util import quietRun
 from mininet.node import Host, OVSSwitch, RemoteController
 from mininet.cli import CLI
 from mininet.net import Mininet
+
 
 # Mercilessly copied from https://github.com/mininet/mininet/blob/master/examples/vlanhost.py
 #
@@ -84,90 +87,17 @@ def start(ip="127.0.0.1",port=6633):
     net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=True)
     c1 = net.addController('c1')
 
-    # Switches in Gates G27.  Main distribution to servers and outside world, plus basement labs 
-    # NOTE: it would be really nice if we can name these descriptively for Mininet instead of s1, etc.
-    s_eor = net.addSwitch('s_eor', dpid = hex(1125908103288861)[2:]) # ('g27/r01/s4810a')
-    s_r1 = net.addSwitch('s_r1', dpid = hex(1125908103297789)[2:]) # ('g27/r01/s4810b') - CURRENTLY UNCONNECTED
-    s_r2 = net.addSwitch('s_r2', dpid = hex(1284990276223830)[2:]) # ('g27/r02/s4820a')
-    s_r3 = net.addSwitch('s_r3', dpid = hex(1284990276223836)[2:]) # ('g27/r03/s4820a')
-    s_r4 = net.addSwitch('s_r4', dpid = hex(1284990276224367)[2:]) # ('g27/r04/s4820a')
-    s_r5 = net.addSwitch('s_r5', dpid = hex(1284990276224415)[2:]) # ('g27/r05/s4820a')
-    s_r6 = net.addSwitch('s_r6', dpid = hex(1284990276223782)[2:]) # ('g27/r06/s4820a')
-    s_r7 = net.addSwitch('s_r7', dpid = hex(1284990276224424)[2:]) # ('g27/r07/s4820a')
-    s_r8 = net.addSwitch('s_r8', dpid = hex(1284990276224331)[2:]) # ('g27/r08/s4820a')
-    s_r9 = net.addSwitch('s_r9', dpid = hex(1284990276224418)[2:]) # ('g27/r09/s4820a')
-    s_r10 = net.addSwitch('s_r10', dpid = hex(1284990276224328)[2:]) # ('g27/r10/s4820a')
-    s_r11 = net.addSwitch('s_r11', dpid = hex(1284990276268919)[2:]) # ('g27/r11/s4820a') - CURRENTLY UNCONNECTED
-    s_r12 = net.addSwitch('s_r12', dpid = hex(1284990276224409)[2:]) # ('g27/r12/s4820a')
-    s_r13 = net.addSwitch('s_r13', dpid = hex(1284990276224322)[2:]) # ('g27/r13/s4820a')
-    s_r14 = net.addSwitch('s_r14', dpid = hex(1284990276224385)[2:]) # ('g27/r14/s4820a')
-    s_r15 = net.addSwitch('s_r15', dpid = hex(1284990276224421)[2:]) # ('g27/r15/s4820a')
-    # switches in r16 and r17 are not used.  
-    s_r18 = net.addSwitch('s_r18', dpid = hex(1284990276224325)[2:]) # ('g27/r18/s4820a') - CURRENTLY UNCONNECTED
+    gates_agraph = pgv.AGraph("gates_topology.dot")
+    for sw in gates_agraph.nodes():
+        net.addSwitch(sw, dpid = hex( int(sw.attr['dpid']) )[2:])
 
-    # Distribution to wall jacks on floors 1-4
-    s_bdf = net.addSwitch('s_bdf', dpid = hex(1125908108270984)[2:]) # ('g126/r02/s4810a')
-    s_f1 = net.addSwitch('s_f1', dpid = hex(1125908103260016)[2:]) # ('g126/r02/s4810b')
-    s_f2 = net.addSwitch('s_f2', dpid = hex(1125908103297849)[2:]) # ('g234/r02/s4810a')
-    s_f3a = net.addSwitch('s_f3a', dpid = hex(1125908103297804)[2:]) # ('g348/r02/s4810a')
-    s_f3b = net.addSwitch('s_f3b', dpid = hex(1125908103297660)[2:]) # ('g302b/r02/s4810a')
-    s_f4 = net.addSwitch('s_f4', dpid = hex(1125908103297765)[2:]) # ('g448a/r02/s4810a')
-
-    # SysLab
-    s_lab_eor = net.addSwitch('s_lab_eor', dpid = hex(1125908103289164)[2:]) # ('g444/r05/s4810a') - A/K/A s_syslab_5a
-    s_lab_r0 = net.addSwitch('s_lab_r0', dpid = hex(1284990276223803)[2:]) # ('g444/r00/s4820a')
-    s_lab_r3 = net.addSwitch('s_lab_r3', dpid = hex(1284990276224316)[2:]) # ('g444/r03/s4820a') - MISLABELLED on spreadsheet
-    s_lab_r99 = net.addSwitch('s_lab_r99', dpid = hex(1284990276223788)[2:]) # ('g444/r99/s4820a') - ALSO mislabelled
-    s_lab_r5 = net.addSwitch('s_lab_r5', dpid = hex(1284990276220716)[2:]) # ('g444/r05/s4820a') - A/K/A s_lab_5b
-    s_lab_r6 = net.addSwitch('s_lab_r6', dpid = hex(1284990276223779)[2:]) # ('g444/r06/s4820a')
-    s_lab_r7 = net.addSwitch('s_lab_r7', dpid = hex(1284990276223785)[2:]) # ('g444/r07/s4820a')
-
-    # TP-Link running Openflow, I think
-    s_tplink = net.addSwitch('s_tplink', dpid = "1") # ('g999/r99/s4820a')
-
-    # Links between switches.  
-    # Basement switches are wired in a star topology
-    # s_r1 is not connected
-    net.addLink(s_eor, s_r2, 3, 49 )
-    net.addLink(s_eor, s_r3, 5, 49 )
-    net.addLink(s_eor, s_r4, 7, 49 )
-    net.addLink(s_eor, s_r5, 9, 49 )
-    net.addLink(s_eor, s_r6, 11, 49 )
-    net.addLink(s_eor, s_r7, 13, 49 )
-    net.addLink(s_eor, s_r8, 15, 49 )
-    net.addLink(s_eor, s_r9, 17, 49 )
-    net.addLink(s_eor, s_r10, 19, 49 )
-    # s_r11 is not connected
-    net.addLink(s_eor, s_r12, 23, 49 )
-    net.addLink(s_eor, s_r13, 25, 49 )
-    net.addLink(s_eor, s_r14, 27, 49 )
-    net.addLink(s_eor, s_r15, 29, 49 )
-
-    # Floor switches are wired in a star as well
-    net.addLink(s_bdf, s_f1, 9, 47 )
-    net.addLink(s_bdf, s_f2, 17, 47 )
-    net.addLink(s_bdf, s_f3a, 23, 47 )
-    net.addLink(s_bdf, s_f3b, 31, 47 )
-    net.addLink(s_bdf, s_f4, 37, 47 )
-
-    # And SysLab switches
-    net.addLink(s_lab_eor, s_lab_r0, 9, 49 )
-    net.addLink(s_lab_eor, s_lab_r3, 21, 49 )
-    net.addLink(s_lab_eor, s_lab_r99, 19, 49 )
-    net.addLink(s_lab_eor, s_lab_r5, 41, 49 )
-    net.addLink(s_lab_eor, s_lab_r6, 29, 49 )
-    net.addLink(s_lab_eor, s_lab_r7, 31, 49 )
-
-    # Links between stars
-    net.addLink(s_eor, s_bdf, 47, 47 )
-    net.addLink(s_bdf, s_lab_eor, 45, 47 )
- 
-    # An odd duck
-    net.addLink(s_lab_r0, s_tplink, 34, 1 )
+    for link in gates_agraph.edges():
+        (src_switch, dst_switch) = link
+        net.addLink(src_switch, dst_switch, int(link.attr['src_port']), int(link.attr['dport']) )
 
     # Only one host and an Internet Router disguised as a host for now (because it's not part of the OF network)
-    h0 = net.addHost('h0', cls=VLANHost, mac='00:00:01:00:00:10', ip='128.253.154.0', vlan=1356)
-    net.addLink(s_bdf, h0, 1, 0)
+    h0 = net.addHost('h0', cls=VLANHost, mac='00:00:01:00:00:10', ip='128.253.154.1', vlan=1356)
+    net.addLink("s_bdf", h0, 1, 0)
 
     # To test DHCP functionality, ucnomment this line and comment out the fixed IP line.  Then when mininet
     # starts you issue:
@@ -175,11 +105,11 @@ def start(ip="127.0.0.1",port=6633):
     # and make sure it gets its IP by going through all protocol steps.
     # h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='0.0.0.0', vlan=1356)
     h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='128.253.154.100', vlan=1356)
-    net.addLink(s_f3a, h1, 1, 0)
+    net.addLink("s_f3a", h1, 32, 0)
 
     # Client for tplink, since it's a little weird
     h2 = net.addHost('h2', cls=VLANHost, mac='00:00:01:00:00:12', ip='128.253.154.101', vlan=1356)
-    net.addLink(s_tplink, h2, 2, 0)
+    net.addLink("s_tplink", h2, 2, 0)
 
     ###### Start of static Mininet epilogue ######
     # Set up logging etc.
@@ -189,7 +119,7 @@ def start(ip="127.0.0.1",port=6633):
     # Start the network
     net.start()
     # Start the DHCP server on Internet Router.  This will actually be a DHCP proxy in the real setup.  
-    startDHCPserver( h0, gw='128.253.154.0', dns='8.8.8.8')
+    startDHCPserver( h0, gw='128.253.154.1', dns='8.8.8.8')
 
 
     # Enter CLI mode
