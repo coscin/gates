@@ -1,0 +1,195 @@
+drop |
+(filter switch = 1 and port = 2; port := 500 |
+ filter not (switch = 1 and port = 2);
+ (filter vlanId = 1356 and ethDst = 00:00:01:00:00:11 or
+         vlanId = 1356 and ethDst = 00:00:01:00:00:10;
+  (filter switch = 1125908103297804 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 1 |
+   filter switch = 1284990276224385 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224421 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224409 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224322 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224328 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276268919 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224325 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224367 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224415 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223782 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224424 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1125908103297789 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223830 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223836 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224331 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276224418 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1125908103260016 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1125908103297660 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1125908103297765 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1125908103297849 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1284990276224316 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223803 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223788 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276220716 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223779 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1284990276223785 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 49 |
+   filter switch = 1125908103288861 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1125908108270984 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 23 |
+   filter switch = 1125908103289164 and vlanId = 1356 and
+          ethDst = 00:00:01:00:00:11;
+   port := 47 |
+   filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:11;
+   port := 1 |
+   (filter switch = 1125908108270984 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 1 |
+    filter switch = 1284990276224385 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224421 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224409 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224322 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224328 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276268919 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224325 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224367 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224415 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223782 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224424 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1125908103297789 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223830 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223836 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224331 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276224418 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1125908103297804 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1125908103297660 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1125908103297765 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1125908103297849 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1125908103260016 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1284990276224316 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223803 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223788 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276220716 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223779 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1284990276223785 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 49 |
+    filter switch = 1125908103288861 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1125908108270984 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 1 |
+    filter switch = 1125908103289164 and vlanId = 1356 and
+           ethDst = 00:00:01:00:00:10;
+    port := 47 |
+    filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:10;
+    port := 1)) |
+  filter not (vlanId = 1356 and ethDst = 00:00:01:00:00:11 or
+              vlanId = 1356 and ethDst = 00:00:01:00:00:10);
+  port := 500))

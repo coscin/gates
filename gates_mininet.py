@@ -84,7 +84,7 @@ def startDHCPserver( host, gw, dns ):
 def start(ip="127.0.0.1",port=6633):
 
     ctrlr = lambda n: RemoteController(n, ip=ip, port=port, inNamespace=False)
-    net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=True)
+    net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=False)
     c1 = net.addController('c1')
 
     gates_agraph = pgv.AGraph("gates_topology.dot")
@@ -103,7 +103,7 @@ def start(ip="127.0.0.1",port=6633):
     # starts you issue:
     #   mininet> h1 dhclient -v -d -1 h1-eth0.1356
     # and make sure it gets its IP by going through all protocol steps.
-    # h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='0.0.0.0', vlan=1356)
+    #h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='0.0.0.0', vlan=1356)
     h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='128.253.154.100', vlan=1356)
     net.addLink("s_f3a", h1, 32, 0)
 
@@ -119,7 +119,7 @@ def start(ip="127.0.0.1",port=6633):
     # Start the network
     net.start()
     # Start the DHCP server on Internet Router.  This will actually be a DHCP proxy in the real setup.  
-    startDHCPserver( h0, gw='128.253.154.1', dns='8.8.8.8')
+    #startDHCPserver( h0, gw='128.253.154.1', dns='8.8.8.8')
 
 
     # Enter CLI mode
