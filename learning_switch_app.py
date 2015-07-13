@@ -215,7 +215,12 @@ class LearningSwitchApp(frenetic.App):
       print "Connected to Frenetic - Switches: "+str(self.switches)
       self.update(self.policy())
       self.initial_config_complete = True
-    self.current_switches(callback=handle_current_switches) 
+    # If Frenetic went down, it'll call connected() when it comes back up.  In that case, just 
+    # resend the current policies
+    if self.initial_config_complete:
+      self.update(self.policy())
+    else:
+      self.current_switches(callback=handle_current_switches) 
 
   def packet_in(self, dpid, port_id, payload):
     # If switches haven't been read in yet, don't process packet.
@@ -234,13 +239,14 @@ class LearningSwitchApp(frenetic.App):
     if p.dst == self.ethernet_broadcast:
       self.flood_all_ports(switch, port_id, payload)
     else:
-      # If it's a unicast packet, send it to the next hop.  We don't care about the ultimate dest/port.
-      if mac not in self.hosts:
-        # This should not happen since we learned the mac above.  But it could happen if a unicast 
-        # packet comes in on a non-edge port before we have learned it.   It'll probably get retried.  
-        print "Mac "+mac+" has not been learned yet.  Dropping."
+      # If it's a unicast packet, send it to the next hop. 
+      if p.dst not in self.hosts:
+        # It's possible that the mac was in the source's ARP cache, but it hasn't been learned yet.
+        # In that case, simply flood it out the switch.  The hope is the mac will respond with a unicast
+        # packet itself, which will then be learned, and will prevent this in the future.
+        self.flood_all_ports(switch, port_id, payload)
       else:
-        (dest_switch, dest_port, next_hop_table) = self.hosts[mac]
+        (dest_switch, dest_port, next_hop_table) = self.hosts[p.dst]
         next_hop_port = next_hop_table[switch]
         print "Sending out "+switch+"/"+str(next_hop_port)
         self.pkt_out(dpid, payload, [Output(Physical(next_hop_port))])
