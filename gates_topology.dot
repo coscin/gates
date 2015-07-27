@@ -22,10 +22,9 @@ strict graph gates {
   s_r14 [ dpid=1284990276224385 ];
   s_r15 [ dpid=1284990276224421 ];
   s_r16 [ dpid=1284990276230355 ];
-  s_r18 [ dpid=1284990276224325 ];
+  s_r18 [ dpid=1284990276230274 ];
   s_bdf [ dpid=1125908108270984 ] ;
   s_f1  [ dpid=1125908103260016 ] ;
-  /* Seems to have been replaced  */
   s_f2  [ dpid=1125908103297849 ] ; 
   s_f3a [ dpid=1125908103297804 ] ;
   s_f3b [ dpid=1125908103297660 ] ;
@@ -56,7 +55,8 @@ strict graph gates {
   s_eor -- s_r14 [ src_port = 27, dport = 49 ];
   s_eor -- s_r15 [ src_port = 29, dport = 49 ];
   s_eor -- s_r16 [ src_port = 31, dport = 49 ];
-  /* s_r18 is not connected */
+  /* s_r17 does not exist */
+  s_eor -- s_r18 [ src_port = 41; dport = 49 ];
 
   /* Floor switches are connected in a star to s_bdf */
   s_bdf -- s_f1  [ src_port = 9,  dport = 47 ];
