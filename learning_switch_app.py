@@ -99,12 +99,12 @@ class LearningSwitchApp(frenetic.App):
 
   def l2_policy(self, switch, mac, port_id):
     # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table
-    # return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+    return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
 
     # The following policy, which is equivalent, doesn't go to the L2 table because it doesn't have a Vlan.  
     # We're using it temporarily because Dell switches with a Match All rule in the ACL table totally
     # ignore the L2 table.  This is slower and prone to run out of ACL space, but...
-    return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+    # return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
 
   # Return true if this port is connected to a host, and not just another switch
   def edge_port(self, switch, port_id):
@@ -137,63 +137,30 @@ class LearningSwitchApp(frenetic.App):
   # Generate a set of NetKAT policies for unicast packets to mac.  Doesn't include broadcasts. 
   # Assumes that we've already "learned" the port and have computed shortest paths, etc.   
   def policies_for_mac(self, mac):
-    if mac not in self.hosts:
-      print "ERROR: "+mac+" has not been learned.  Packet being dropped."
-      return drop() 
-
     (dest_switch, dest_port, next_hop_table) = self.hosts[mac]
-    return Union([ self.l2_policy(next_sw, mac, next_hop_table[next_sw]) for next_sw in next_hop_table ] )
+    return [ self.l2_policy(next_sw, mac, next_hop_table[next_sw]) for next_sw in next_hop_table ]
 
-  def send_to_controller(self):
-    return Mod(Location(Pipe("learning_switch_app")))
-
-  def incoming_unlearned_port_pred(self):
-     return Or([Test(Switch(self.switch_to_dpid(sw))) & Test(Location(Physical(p))) for (sw,p) in self.unlearned_incoming_ports])
-
-  def all_incoming_ports(self):
-    host_ports = set()
-    for sw in self.switches:
-      for p in self.switches[sw]:
-        if self.edge_port(sw, p):
-          host_ports.add( (sw,p) )
-    return host_ports
-
-  def dest_mac_learned_pred(self):
-    # See l2_policy for explanation
-    # return Or([ Test(Vlan(self.vlan)) & Test(EthDst(mac)) for mac in self.hosts])
-    return Or([ Test(EthDst(mac)) for mac in self.hosts])
+  def incoming_unlearned_port_policy(self, switch, port_id):
+     return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(Location(Physical(port_id))) ) >> Mod(Location(Pipe("learning_switch_app")))
 
   def broadcast_policy_for_switch_and_port(self, switch, port_id):
     flood_to_ports = [ p for p in self.switches[switch] if p != port_id ]
     output_actions = Union([  Mod(Location(Physical(p))) for p in flood_to_ports ])
     return Filter(Test(EthDst(self.ethernet_broadcast)) & Test(Switch(self.switch_to_dpid(switch))) & Test(Location(Physical(port_id)))) >> output_actions
 
-  def broadcast_policy_for_switch(self, switch):
-    return Union([ self.broadcast_policy_for_switch_and_port(switch, p) for p in self.switches[switch] ])
-
-  def broadcast_policies(self):
-    return Union([ self.broadcast_policy_for_switch(sw) for sw in self.switches ])
-
-  def next_hop_policies(self):
-    # This constructs m * s policies, where m = number of macs learned and s = number of switches
-    return Union([ self.policies_for_mac(mac) for mac in self.hosts ])
-
   def policy(self):
-    # The essence of the policy is:
-    #
-    #     if incoming port is not learned, then controller
-    #        else if dest mac is broadcast, then broadcast to all ports except ingress
-    #        else if dest mac is learned then go to next hop
-    #        else controller
+    all_policies = []
+    for sw in self.switches:
+      for p in self.switches[sw]:
+        if (sw,p) in self.unlearned_incoming_ports:
+          all_policies.append( self.incoming_unlearned_port_policy(sw, p) )
+        else:
+          all_policies.append( self.broadcast_policy_for_switch_and_port(sw, p) )
 
-    incoming_unlearned_port_pred = self.incoming_unlearned_port_pred()
-    is_broadcast_pred = Test(EthDst(self.ethernet_broadcast))
-    dest_mac_learned_pred = self.dest_mac_learned_pred()
+    for mac in self.hosts:
+      all_policies += self.policies_for_mac(mac)
 
-    return incoming_unlearned_port_pred.ite(self.send_to_controller(),
-      is_broadcast_pred.ite( self.broadcast_policies(),
-      dest_mac_learned_pred.ite( self.next_hop_policies(), self.send_to_controller()
-    )))
+    return Union(all_policies)
 
   # Send payload to all ports except the ingress port.  
   def flood_all_ports(self,switch, port_id, payload):
@@ -206,6 +173,15 @@ class LearningSwitchApp(frenetic.App):
     # Only bother to send the packet out if there are ports to send it out on.
     if output_actions:
       self.pkt_out(self.switch_to_dpid(switch), payload, output_actions)
+
+
+  def all_incoming_ports(self):
+    host_ports = set()
+    for sw in self.switches:
+      for p in self.switches[sw]:
+        if self.edge_port(sw, p):
+          host_ports.add( (sw,p) )
+    return host_ports
 
   def connected(self):
     def handle_current_switches(switches):
