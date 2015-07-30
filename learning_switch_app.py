@@ -97,14 +97,22 @@ class LearningSwitchApp(frenetic.App):
       return int(switch[2:])
     return int(self.switch_to_dpid_dict[switch])
 
-  def l2_policy(self, switch, mac, port_id):
-    # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table
-    return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(Vlan(self.vlan)) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+  def unlearned_incoming_ports_in_switch(self, switch):
+    return map(lambda swp: swp[1], filter(lambda swp: swp[0]==switch, self.unlearned_incoming_ports))
 
-    # The following policy, which is equivalent, doesn't go to the L2 table because it doesn't have a Vlan.  
-    # We're using it temporarily because Dell switches with a Match All rule in the ACL table totally
-    # ignore the L2 table.  This is slower and prone to run out of ACL space, but...
-    # return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(EthDst(mac)) ) >> Mod(Location(Physical(port_id)))
+  def l2_policy(self, switch, mac, port_id):
+    # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table.  However,
+    # you have to add the unlearned and internal ports clause so that extra unneeded rules are not added to ACL.  They
+    # actually get optimized out in flow table generation
+    ignore_ports = self.unlearned_incoming_ports_in_switch(switch) 
+    ignore_ports += self.switch_internal_ports[switch]
+    ignore_preds = [ Test(Location(Physical(p))) for p in ignore_ports ]
+    return Filter( \
+      Test(Switch(self.switch_to_dpid(switch))) & \
+      Test(Vlan(self.vlan)) & \
+      Test(EthDst(mac)) & \
+      Not(Or(ignore_preds)) \
+    ) >> Mod(Location(Physical(port_id)))
 
   # Return true if this port is connected to a host, and not just another switch
   def edge_port(self, switch, port_id):
@@ -141,7 +149,13 @@ class LearningSwitchApp(frenetic.App):
     return [ self.l2_policy(next_sw, mac, next_hop_table[next_sw]) for next_sw in next_hop_table ]
 
   def incoming_unlearned_port_policy(self, switch, port_id):
-     return Filter( Test(Switch(self.switch_to_dpid(switch))) & Test(Location(Physical(port_id))) ) >> Mod(Location(Pipe("learning_switch_app")))
+    # This is required for proper optimization.   See l2_policy for reasons why.
+    ignore_mac_preds = [ Test(EthDst(mac)) for mac in self.hosts ]
+    return Filter( \
+      Test(Switch(self.switch_to_dpid(switch))) & \
+      Test(Location(Physical(port_id))) & \
+      Not(Or(ignore_mac_preds))
+    ) >> Mod(Location(Pipe("learning_switch_app")))
 
   def broadcast_policy_for_switch_and_port(self, switch, port_id):
     flood_to_ports = [ p for p in self.switches[switch] if p != port_id ]

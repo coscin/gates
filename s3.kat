@@ -1,0 +1,50 @@
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 47;
+(port := 41 | port := 39 | port := 38 | port := 37 | port := 36 | port := 35 |
+ port := 34 | port := 33 | port := 31 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 41;
+(port := 47 | port := 39 | port := 38 | port := 37 | port := 36 | port := 35 |
+ port := 34 | port := 33 | port := 31 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 31;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 29;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 21;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 19;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 21 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 9;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 21 |
+ port := 19 | port := 11) |
+
+filter switch = 1125908103289164 and port = 39; port := 500 |
+filter switch = 1125908103289164 and port = 38; port := 500 |
+filter switch = 1125908103289164 and port = 37; port := 500 |
+filter switch = 1125908103289164 and port = 36; port := 500 |
+filter switch = 1125908103289164 and port = 35; port := 500 |
+filter switch = 1125908103289164 and port = 34; port := 500 |
+filter switch = 1125908103289164 and port = 33; port := 500 |
+filter switch = 1125908103289164 and port = 11; port := 500 |
+
+filter switch = 1125908103289164 and not 
+  (port=39 or port=38 or port=37 or port=36 or port=35 or port=34 or port=33 or port=11 or port=9 or port=19 or port=21 or port=29 or port=31 or port=41 or port=47)
+  and vlanId = 1356 and ethDst = 10:fe:ed:9b:d3:7d; port := 9 |
+filter switch = 1125908103289164 and not 
+  (port=39 or port=38 or port=37 or port=36 or port=35 or port=34 or port=33 or port=11 or port=9 or port=19 or port=21 or port=29 or port=31 or port=41 or port=47) 
+  and vlanId = 1356 and ethDst = 00:26:b9:2d:78:37; port := 31 |
+filter switch = 1125908103289164 and not 
+  (port=39 or port=38 or port=37 or port=36 or port=35 or port=34 or port=33 or port=11 or port=9 or port=19 or port=21 or port=29 or port=31 or port=41 or port=47)
+  and vlanId = 1356 and ethDst = 10:fe:ed:9b:b2:0d; port := 47 |
+filter switch = 1125908103289164and not 
+  (port=39 or port=38 or port=37 or port=36 or port=35 or port=34 or port=33 or port=11 or port=9 or port=19 or port=21 or port=29 or port=31 or port=41 or port=47)
+   and vlanId = 1356 and ethDst = d4:c9:ef:b2:1b:80; port := 47

@@ -1,0 +1,437 @@
+Policy (switch s_lab_eor only):
+
+Broadcast:
+
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 47;
+(port := 41 | port := 39 | port := 38 | port := 37 | port := 36 | port := 35 |
+ port := 34 | port := 33 | port := 31 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 41;
+(port := 47 | port := 39 | port := 38 | port := 37 | port := 36 | port := 35 |
+ port := 34 | port := 33 | port := 31 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 31;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 29 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 29;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 21 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 21;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 19 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 19;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 21 |
+ port := 11 | port := 9) |
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1125908103289164 and port = 9;
+(port := 47 | port := 41 | port := 39 | port := 38 | port := 37 | port := 36 |
+ port := 35 | port := 34 | port := 33 | port := 31 | port := 29 | port := 21 |
+ port := 19 | port := 11) |
+
+Unlearned:
+
+filter switch = 1125908103289164 and port = 39; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 38; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 37; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 36; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 35; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 34; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 33; port := pipe(learning_switch_app) |
+filter switch = 1125908103289164 and port = 11; port := pipe(learning_switch_app) |
+
+Learned:
+
+filter switch = 1125908103289164 and vlanId = 1356 and ethDst = 10:fe:ed:9b:d3:7d; port := 9 |
+filter switch = 1125908103289164 and vlanId = 1356 and ethDst = 00:26:b9:2d:78:37; port := 31 |
+filter switch = 1125908103289164 and vlanId = 1356 and ethDst = 10:fe:ed:9b:b2:0d; port := 47 |
+filter switch = 1125908103289164 and vlanId = 1356 and ethDst = d4:c9:ef:b2:1b:80; port := 47 |
+
+Flow Table:
+
++------------------------------------------------------+
+| 1125908103289164 | Pattern | Action                  |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(31)              |
+| EthDst = 00:26:b9:2d:78:37 |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(47)              |
+| EthDst = 10:fe:ed:9b:b2:0d |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(9)               |
+| EthDst = 10:fe:ed:9b:d3:7d |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(47)              |
+| EthDst = d4:c9:ef:b2:1b:80 |                         |
+|------------------------------------------------------|
+| InPort = 9                 | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(41)              |
+|                            | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(29)              |
+|                            | Output(21)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 19                | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(41)              |
+|                            | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(29)              |
+|                            | Output(21)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 21                | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(41)              |
+|                            | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(29)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 29                | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(41)              |
+|                            | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(21)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 31                | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(41)              |
+|                            | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(29)              |
+|                            | Output(21)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 41                | Output(47)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(29)              |
+|                            | Output(21)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 47                | Output(41)              |
+| EthDst = ff:ff:ff:ff:ff:ff | Output(39)              |
+|                            | Output(38)              |
+|                            | Output(37)              |
+|                            | Output(36)              |
+|                            | Output(35)              |
+|                            | Output(34)              |
+|                            | Output(33)              |
+|                            | Output(31)              |
+|                            | Output(29)              |
+|                            | Output(21)              |
+|                            | Output(19)              |
+|                            | Output(11)              |
+|                            | Output(9)               |
+|------------------------------------------------------|
+| InPort = 11                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 33                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 34                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 35                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 36                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 37                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 38                | Output(Controller(128)) |
+|------------------------------------------------------|
+| InPort = 39                | Output(Controller(128)) |
++------------------------------------------------------+

@@ -1,0 +1,4 @@
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1 and port = 1; port := 2 |
+filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:11 and not (port = 2 or port = 1); port := 1 |
+filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:10 and not (port = 2 or port = 1); port := 1 |
+filter switch = 1 and port = 2 and not ( ethDst = 00:00:01:00:00:11 or ethDst = 00:00:01:00:00:10 ); port := 500

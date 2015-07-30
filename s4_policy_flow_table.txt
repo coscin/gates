@@ -1,0 +1,38 @@
+Broadcast:
+filter ethDst = ff:ff:ff:ff:ff:ff and switch = 1 and port = 1; port := 2 |
+
+Unlearned:
+filter switch = 1 and port = 2; port := pipe(learning_switch_app) |
+
+Learned:
+filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:11 and not (port = 2 or port = 1); port := 1 |
+filter switch = 1 and vlanId = 1356 and ethDst = 00:00:01:00:00:10 and not (port = 2 or port = 1); port := 1 |
+
+Flow Table:
+
++------------------------------------------------------+
+| 1 | Pattern                | Action                  |
+|------------------------------------------------------|
+| InPort = 2                 | Output(Controller(128)) |
+| EthDst = 00:00:01:00:00:10 |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(1)               |
+| EthDst = 00:00:01:00:00:10 |                         |
+|------------------------------------------------------|
+| InPort = 2                 | Output(Controller(128)) |
+| EthDst = 00:00:01:00:00:11 |                         |
+|------------------------------------------------------|
+| Vlan = 1356                | Output(1)               |
+| EthDst = 00:00:01:00:00:11 |                         |
+|------------------------------------------------------|
+| InPort = 1                 | Output(2)               |
+| EthDst = ff:ff:ff:ff:ff:ff |                         |
+|------------------------------------------------------|
+| InPort = 2                 | Output(Controller(128)) |
++------------------------------------------------------+
+
+Rules 1 and 3 are not technically incorrect, since we want any packet in port 2 to trip a learning rule.
+But they are unnecessary given rule 6, and they take up valuable ACL table space.  If you've learned 200 macs on the network and you have 3 unlearned ports on your switch, you'll have 600 rules in ACL - game over.
+
+You know.  That could be OK.  A functional but unlearned port probably doesn't stay unlearned for long.  But it bugs me and generates noise.
+
