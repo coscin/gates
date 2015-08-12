@@ -1,0 +1,6 @@
+filter (port = 1 and ethDst = ff:ff:ff:ff:ff:ff) ; (port := 2 | port := 3) | 
+filter (port = 2 and not (ethDst = 10:00:00:00:00:01 or ethDst = 20:00:00:00:00:01 )); port := 500 |
+filter (port = 3 and ethDst = ff:ff:ff:ff:ff:ff) ; (port := 1 | port := 2) |
+
+filter (vlanId = 1356 and ethDst = 10:00:00:00:00:01 and not (port = 2 or port = 3)); port := 1 |
+filter (vlanId = 1356 and ethDst = 20:00:00:00:00:01 and not (port = 2 or port = 3)); port := 0

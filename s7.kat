@@ -1,0 +1,13 @@
+if port = 2 then port := 500
+
+else if ethDst = ff:ff:ff:ff:ff:ff then (
+  filter port = 1; (port := 2 | port := 3) |
+  filter port = 3; (port := 1 | port := 2) 
+)
+
+else if vlanId = 1356 and (ethDst = 10:00:00:00:00:01 or ethDst = 20:00:00:00:00:01) then (
+  filter (ethDst = 10:00:00:00:00:01); port := 1 |
+  filter (ethDst = 20:00:00:00:00:01); port := 3
+)
+
+else port := 500

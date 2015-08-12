@@ -85,6 +85,39 @@ class LearningSwitchApp(frenetic.App):
     nxgraph = nx.from_agraph(self.agraph)
     self.nx_topo = nx.minimum_spanning_tree(nxgraph)
 
+  def preload_learned_unlearned(self, switch, external_ports, learned_ports):
+    # Only for testing 
+
+    # This looks dumb, but I just want a unique two-digit number to represent a switch for testing
+    switch_index = 0
+    for this_sw in self.switches:
+      if this_sw == switch:
+        sw = self.switches[switch]
+        switch_number = switch_index
+      switch_index += 1
+
+    for port_id in external_ports:
+      if port_id not in sw:
+        sw.append(port_id)
+
+      if port_id in learned_ports:
+        # Assume that the mac at switch s, port p is s:00:00:00:00:00:p.  Ignore hex nonsense.
+        fake_mac = ('%02d' % switch_number) + ":00:00:00:00:" + ('%02d' % port_id)
+        self.learn(switch, port_id, fake_mac)
+      else:
+        self.unlearned_incoming_ports.add( (switch, port_id) )
+
+  def capacity_testing(self):
+    # Only for testing
+    print "---> Calculating capacity testing data"
+    for switch_id in self.switches:
+      external_ports = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+      learned_ports = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+      self.preload_learned_unlearned(switch_id, external_ports, learned_ports)
+    print "---> Installing in switch"
+    self.update(self.policy())
+    print "---> Done"
+
   def dpid_to_switch(self,dpid):
     # If ITSG introduces a new switch that's not in our topo map yet, be tolerant of it (even if it
     # has no edges yet, so it can't route anything)
@@ -202,6 +235,8 @@ class LearningSwitchApp(frenetic.App):
       # Convert ugly switch id to nice one
       self.switches = { self.dpid_to_switch(dpid): ports for dpid, ports in switches.items() }
       self.unlearned_incoming_ports = self.all_incoming_ports()
+      # Uncomment the following to pre-seed learned macs for capacity testing
+      # self.capacity_testing()
       print "Connected to Frenetic - Switches: "+str(self.switches)
       self.update(self.policy())
       self.initial_config_complete = True
@@ -276,6 +311,7 @@ class LearningSwitchApp(frenetic.App):
     switch = self.dpid_to_switch(dpid)
     print "Switch Down: "+switch
 
-print "\n\n\n*** Gates Learning Switch Application Begin"
-app = LearningSwitchApp()
-app.start_event_loop()
+if __name__ == '__main__':
+  print "\n\n\n*** Gates Learning Switch Application Begin"
+  app = LearningSwitchApp()
+  app.start_event_loop()

@@ -22,6 +22,7 @@ strict graph gates {
   s_r14 [ dpid=1284990276224385 ];
   s_r15 [ dpid=1284990276224421 ];
   s_r16 [ dpid=1284990276230355 ];
+  /* s_r17 is not present */
   s_r18 [ dpid=1284990276230274 ];
   s_bdf [ dpid=1125908108270984 ] ;
   s_f1  [ dpid=1125908103260016 ] ;
@@ -39,7 +40,7 @@ strict graph gates {
   s_tplink  [ dpid=1 ];
 
   /* Server room end-of-rack switch hooks the server room rack servers in a star */
-  /* s_r1 is not connected */
+  s_eor -- s_r1  [ src_port = 1,  dport = 49 ];
   s_eor -- s_r2  [ src_port = 3,  dport = 49 ];
   s_eor -- s_r3  [ src_port = 5,  dport = 49 ];
   s_eor -- s_r4  [ src_port = 7,  dport = 49 ];
@@ -49,13 +50,12 @@ strict graph gates {
   s_eor -- s_r8  [ src_port = 15, dport = 49 ];
   s_eor -- s_r9  [ src_port = 17, dport = 49 ];
   s_eor -- s_r10 [ src_port = 19, dport = 49 ];
-  /* s_r11 is not connected */
+  s_eor -- s_r11 [ src_port = 21, dport = 49 ];
   s_eor -- s_r12 [ src_port = 23, dport = 49 ];
   s_eor -- s_r13 [ src_port = 25, dport = 49 ];
   s_eor -- s_r14 [ src_port = 27, dport = 49 ];
   s_eor -- s_r15 [ src_port = 29, dport = 49 ];
   s_eor -- s_r16 [ src_port = 31, dport = 49 ];
-  /* s_r17 does not exist */
   s_eor -- s_r18 [ src_port = 41; dport = 49 ];
 
   /* Floor switches are connected in a star to s_bdf */
