@@ -5,7 +5,7 @@
    script and the learning_switch_app.py Frenetic app
    */ 
 strict graph gates {
-  s_eor [ dpid=1125908103288861 ]; 
+  s_eor [ dpid=1125908103288861, core=true ]; 
   s_r1  [ dpid=1125908103297789 ];
   s_r2  [ dpid=1284990276223830 ];
   s_r3  [ dpid=1284990276223836 ];
@@ -24,13 +24,13 @@ strict graph gates {
   s_r16 [ dpid=1284990276230355 ];
   /* s_r17 is not present */
   s_r18 [ dpid=1284990276230274 ];
-  s_bdf [ dpid=1125908108270984 ] ;
+  s_bdf [ dpid=1125908108270984, core=true ] ;
   s_f1  [ dpid=1125908103260016 ] ;
   s_f2  [ dpid=1125908103297849 ] ; 
   s_f3a [ dpid=1125908103297804 ] ;
   s_f3b [ dpid=1125908103297660 ] ;
   s_f4  [ dpid=1125908103297765 ] ;
-  s_lab_eor [ dpid=1125908103289164 ] ;
+  s_lab_eor [ dpid=1125908103289164, core=true ] ;
   s_lab_r3  [ dpid=1284990276224316 ] ;
   s_lab_r99 [ dpid=1284990276223788 ] ;
   s_lab_r5  [ dpid=1284990276220716 ] ;

@@ -1,0 +1,4 @@
+filter  (vlanId = 1356 and ethDst = ff:ff:ff:ff:ff:ff and port = 31) ; (port := 47 | port := 29 | port := 19 | port := 21 | port := 41 | port := 9) |
+filter  (vlanId = 1356 and ethDst = ff:ff:ff:ff:ff:ff and port = 21) ; (port := 47 | port := 29 | port := 19 | port := 31 | port := 41 | port := 9) |
+filter (vlanId = 1356 and ethDst = d4:c9:ef:b2:1b:80) ; port := 47
+filter (vlanId = 9999) ; 

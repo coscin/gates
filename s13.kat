@@ -1,0 +1,6 @@
+filter vlanId = 1356 and switch = 243 and port = 32 and
+        ethSrc = 00:00:01:00:00:11 and not (ethDst = 00:00:01:00:00:11);
+ port := 47 |
+ filter vlanId = 1356 and switch = 243 and port = 47 and
+        not (ethSrc = 00:00:01:00:00:11) and ethDst = 00:00:01:00:00:11;
+ port := 32

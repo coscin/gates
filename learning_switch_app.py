@@ -2,7 +2,7 @@
 # Craig Riecke, CoSciN Developer/Analyst, June, 2015
 
 # A frenetic app that learns host mac addresses as they arrive and installs "next hop" rules on each
-# switch table.  Currently this is a fixed topology - later we'll learn it from discovery.  
+# switch table using a fixed toplogy.
 
 # Note: I'm sure there's a nicer way to do this ...
 import sys, array
@@ -27,22 +27,20 @@ class LearningSwitchApp(frenetic.App):
   # where hoplistn is the next_hop table for each switch: [(sw1, port1), (sw2, port2), etc.] 
   hosts = {}
 
-  # shortest_paths = { hostmac1 => {sw1 => [sw1, hop1, hop2, host], sw2 => [sw2, hop1, hop2, host]}, hostmac2 => }
-  shortest_paths = {}
-
   # switches = { sw1 => [p1, p2, ...], sw2 => [ p1, ... ], }
   switches = {}
 
   # Like switches, but lists only internal ports
   switch_internal_ports = {}
 
+  # Set of switches that form the core.  It's assumed no hosts are connected to these switches
+  # except the Internet router which we pre-seed.  The L2 tables are stored on them.
+  core_switches = set()
+
   # Like switches but returns a dictionary of destination switches to ports.  Though this data is part
   # of the agraph, the conversion of agraphs to networkx graphs turns the source and destination of 
   # the edges around (which is OK, because the graph is undirected)
   port_mappings = {}
-
-  # unlearned_incoming_ports = { (sw1, port1), (sw2, port2), ... }
-  unlearned_incoming_ports = {}
 
   initial_config_complete = False
 
@@ -54,15 +52,17 @@ class LearningSwitchApp(frenetic.App):
   dpid_to_switch_dict = { }
   switch_to_dpid_dict = { }
 
-  def __init__(self):
+  def __init__(self, topology_file = "gates_topology.dot"):
     frenetic.App.__init__(self) 
 
-    print "---> Reading Topology"
-    self.agraph = pgv.AGraph("gates_topology.dot")
+    print "---> Reading Topology from "+topology_file
+    self.agraph = pgv.AGraph(topology_file)
     for sw in self.agraph.nodes():
       dpid = str(sw.attr['dpid'])
       self.dpid_to_switch_dict[ dpid ] = str(sw)
       self.switch_to_dpid_dict[ str(sw) ] = dpid
+      if sw.attr['core']:
+        self.core_switches.add (str(sw))
 
     # It's faster to denormalize this now
     print "---> Remembering internal ports"
@@ -85,39 +85,6 @@ class LearningSwitchApp(frenetic.App):
     nxgraph = nx.from_agraph(self.agraph)
     self.nx_topo = nx.minimum_spanning_tree(nxgraph)
 
-  def preload_learned_unlearned(self, switch, external_ports, learned_ports):
-    # Only for testing 
-
-    # This looks dumb, but I just want a unique two-digit number to represent a switch for testing
-    switch_index = 0
-    for this_sw in self.switches:
-      if this_sw == switch:
-        sw = self.switches[switch]
-        switch_number = switch_index
-      switch_index += 1
-
-    for port_id in external_ports:
-      if port_id not in sw:
-        sw.append(port_id)
-
-      if port_id in learned_ports:
-        # Assume that the mac at switch s, port p is s:00:00:00:00:00:p.  Ignore hex nonsense.
-        fake_mac = ('%02d' % switch_number) + ":00:00:00:00:" + ('%02d' % port_id)
-        self.learn(switch, port_id, fake_mac)
-      else:
-        self.unlearned_incoming_ports.add( (switch, port_id) )
-
-  def capacity_testing(self):
-    # Only for testing
-    print "---> Calculating capacity testing data"
-    for switch_id in self.switches:
-      external_ports = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-      learned_ports = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-      self.preload_learned_unlearned(switch_id, external_ports, learned_ports)
-    print "---> Installing in switch"
-    self.update(self.policy())
-    print "---> Done"
-
   def dpid_to_switch(self,dpid):
     # If ITSG introduces a new switch that's not in our topo map yet, be tolerant of it (even if it
     # has no edges yet, so it can't route anything)
@@ -130,32 +97,17 @@ class LearningSwitchApp(frenetic.App):
       return int(switch[2:])
     return int(self.switch_to_dpid_dict[switch])
 
-  def unlearned_incoming_ports_in_switch(self, switch):
-    return map(lambda swp: swp[1], filter(lambda swp: swp[0]==switch, self.unlearned_incoming_ports))
-
-  def l2_policy(self, switch, mac, port_id):
-    # If you use this to make a NetKAT policy, it's guaranteed to go into the Dell L2 table.  However,
-    # you have to add the unlearned and internal ports clause so that extra unneeded rules are not added to ACL.  They
-    # actually get optimized out in flow table generation
-    ignore_ports = self.unlearned_incoming_ports_in_switch(switch) 
-    ignore_ports += self.switch_internal_ports[switch]
-    ignore_preds = [ Test(Location(Physical(p))) for p in ignore_ports ]
-    return Filter( \
-      Test(Switch(self.switch_to_dpid(switch))) & \
-      Test(Vlan(self.vlan)) & \
-      Test(EthDst(mac)) & \
-      Not(Or(ignore_preds)) \
-    ) >> Mod(Location(Physical(port_id)))
-
   # Return true if this port is connected to a host, and not just another switch
+  def internal_port(self, switch, port_id):
+    return port_id in self.switch_internal_ports[switch]
+
   def edge_port(self, switch, port_id):
-    return port_id not in self.switch_internal_ports[switch]
+    return not self.internal_port(switch, port_id)
+
+  def hosts_on_switch(self, switch):
+    return filter(lambda mac: self.hosts[mac][0] == switch, self.hosts)
 
   def learn(self, switch, port_id, mac):
-    # Don't learn ethernet broadcast or hosts we've already learned before.  
-    if mac == self.ethernet_broadcast or mac in self.hosts:
-      return
-
     print "Learning: "+mac+" attached to ( "+switch+", "+str(port_id)+" )"
     # Compute next hop table: from each switch, which port do you need to go next to get to destination?
     self.nx_topo.add_node(mac)
@@ -173,39 +125,68 @@ class LearningSwitchApp(frenetic.App):
         next_hop_table[sw] = self.port_mappings[sw][next_sw]
 
     self.hosts[mac] = (switch, port_id, next_hop_table)
-    self.unlearned_incoming_ports.discard( (switch, port_id) )
-
-  # Generate a set of NetKAT policies for unicast packets to mac.  Doesn't include broadcasts. 
-  # Assumes that we've already "learned" the port and have computed shortest paths, etc.   
-  def policies_for_mac(self, mac):
-    (dest_switch, dest_port, next_hop_table) = self.hosts[mac]
-    return [ self.l2_policy(next_sw, mac, next_hop_table[next_sw]) for next_sw in next_hop_table ]
-
-  def incoming_unlearned_port_policy(self, switch, port_id):
-    # This is required for proper optimization.   See l2_policy for reasons why.
-    ignore_mac_preds = [ Test(EthDst(mac)) for mac in self.hosts ]
-    return Filter( \
-      Test(Switch(self.switch_to_dpid(switch))) & \
-      Test(Location(Physical(port_id))) & \
-      Not(Or(ignore_mac_preds))
-    ) >> Mod(Location(Pipe("learning_switch_app")))
-
-  def broadcast_policy_for_switch_and_port(self, switch, port_id):
+ 
+  def broadcast_policy_for_switch_and_port(self, switch, port_id, include_vlan = True):
     flood_to_ports = [ p for p in self.switches[switch] if p != port_id ]
     output_actions = Union([  Mod(Location(Physical(p))) for p in flood_to_ports ])
-    return Filter(Test(EthDst(self.ethernet_broadcast)) & Test(Switch(self.switch_to_dpid(switch))) & Test(Location(Physical(port_id)))) >> output_actions
+    rules = [ 
+      Test(Switch(self.switch_to_dpid(switch))), 
+      Test(Location(Physical(port_id))), Test(EthDst(self.ethernet_broadcast))
+    ]
+    if include_vlan:
+      rules.append( Test(Vlan(self.vlan)) )
+    return Filter( And(rules) ) >> output_actions
+
+  def core_next_hop_policy(self, switch, mac):
+    (dest_switch, dest_port, next_hop_table) = self.hosts[mac]
+    return Filter( \
+      Test(Vlan(self.vlan)) & 
+      Test(Switch(self.switch_to_dpid(switch))) & \
+      Test(EthDst(mac)) \
+    ) >> Mod(Location(Physical(next_hop_table[switch])))
+
+  def uplink_port(self, switch):
+    return 47 if switch.startswith("s_f") else 49
+
+  def edge_from_learned_port_policy(self, switch, learned_port, mac):
+    return Filter( \
+      Test(Switch(self.switch_to_dpid(switch))) & \
+      Test(Location(Physical(learned_port))) & \
+      Test(EthSrc(mac))
+    ) >> Mod(Location(Physical(self.uplink_port(switch))))
+
+  def to_learned_port_policy(self, switch, learned_port, mac):
+    return Filter( \
+      Test(Switch(self.switch_to_dpid(switch))) & \
+      Test(Location(Physical(self.uplink_port(switch)))) & \
+      Not(Test(EthSrc(mac))) & \
+      Test(EthDst(mac)) 
+    ) >> Mod(Location(Physical(learned_port)))
 
   def policy(self):
     all_policies = []
-    for sw in self.switches:
-      for p in self.switches[sw]:
-        if (sw,p) in self.unlearned_incoming_ports:
-          all_policies.append( self.incoming_unlearned_port_policy(sw, p) )
-        else:
-          all_policies.append( self.broadcast_policy_for_switch_and_port(sw, p) )
 
-    for mac in self.hosts:
-      all_policies += self.policies_for_mac(mac)
+    for sw in self.switches:
+
+      if sw in self.core_switches:
+        # Broadcast rules are installed for all ports on core switches
+        for p in self.switches[sw]:
+          all_policies.append( self.broadcast_policy_for_switch_and_port(sw, p) )
+        for mac in self.hosts:
+          # Install an L2 rule for every host in the network.  
+          all_policies.append( self.core_next_hop_policy( sw, mac ) )
+
+      else:
+        switch_hosts = self.hosts_on_switch(sw)
+        # There is one broadcast rule on edge switches, coming in from the uplink port
+        up = self.uplink_port(sw)
+        all_policies.append( self.broadcast_policy_for_switch_and_port(sw, up, include_vlan = False) )
+        for mac in switch_hosts:
+          (_, dest_port, _) = self.hosts[mac]
+          # Forward traffic from learned mac addresses to a core switch for dispatch
+          all_policies.append( self.edge_from_learned_port_policy(sw, dest_port, mac) )
+          # Forward traffic bound for a mac on this switch to the right port
+          all_policies.append( self.to_learned_port_policy(sw, dest_port, mac)  )
 
     return Union(all_policies)
 
@@ -215,28 +196,30 @@ class LearningSwitchApp(frenetic.App):
     if switch not in self.switches:
       return
     flood_to_ports = [ p for p in self.switches[switch] if p != port_id ]
-    print "Flooding from switch "+switch+" to "+str(flood_to_ports)
     output_actions = [ Output(Physical(p)) for p in flood_to_ports ]
     # Only bother to send the packet out if there are ports to send it out on.
     if output_actions:
+      print "Flooding from switch "+switch+" to "+str(flood_to_ports)
       self.pkt_out(self.switch_to_dpid(switch), payload, output_actions)
-
-
-  def all_incoming_ports(self):
-    host_ports = set()
-    for sw in self.switches:
-      for p in self.switches[sw]:
-        if self.edge_port(sw, p):
-          host_ports.add( (sw,p) )
-    return host_ports
+    else:
+      print "No ports to flood broadcast from "+ str(port_id) + " on "+switch+" dropping packet."
 
   def connected(self):
     def handle_current_switches(switches):
       # Convert ugly switch id to nice one
       self.switches = { self.dpid_to_switch(dpid): ports for dpid, ports in switches.items() }
-      self.unlearned_incoming_ports = self.all_incoming_ports()
-      # Uncomment the following to pre-seed learned macs for capacity testing
-      # self.capacity_testing()
+ 
+      # We need to preload this because s_bdf is a core switch and macs are never learned here.
+      # Besides, we don't want anyone trying to spoof it.  
+      self.learn( 's_bdf', 1, 'd4:c9:ef:b2:1b:80' )
+
+      # Load appropriate compiler options
+      self.config( CompilerOptions("empty", "Location < EthDst < EthSrc < Vlan < Switch", True, False, True) )
+
+      # This is bogus, but prevents a race condition in Frenetic
+      import time
+      time.sleep(5)
+
       print "Connected to Frenetic - Switches: "+str(self.switches)
       self.update(self.policy())
       self.initial_config_complete = True
@@ -257,9 +240,15 @@ class LearningSwitchApp(frenetic.App):
     switch = self.dpid_to_switch(dpid)
     print "Received "+p.src+" -> ("+str(switch)+", "+str(port_id)+") -> "+p.dst
     mac = p.src
-    if mac != self.ethernet_broadcast and mac not in self.hosts and self.edge_port(switch, port_id):
-      self.learn(switch, port_id, mac)
-      self.update(self.policy())
+    if mac != self.ethernet_broadcast and self.edge_port(switch, port_id):
+      if mac in self.hosts:
+        (last_seen_switch, last_seen_port, _) = self.hosts[mac]
+        if last_seen_switch != switch or last_seen_port != port_id:
+          print "----> WARNING:  Dropping packet.  Apparent MAC spoofing of "+mac+" at "+switch+" / "+str(port_id)
+          return
+      else:
+        self.learn(switch, port_id, mac)
+        self.update(self.policy())
     # If this is a broadcast packet, send it to all destinations that aren't the ingress port.  
     if p.dst == self.ethernet_broadcast:
       self.flood_all_ports(switch, port_id, payload)
@@ -283,10 +272,8 @@ class LearningSwitchApp(frenetic.App):
 
   def port_up(self,dpid, port_id):
     switch = self.dpid_to_switch(dpid)
-    # If port comes up, remove any learned macs on it (probably won't be any) and
-    # add it to the list of unlearned ports.
+    # If port comes up, remove any learned macs on it (probably won't be any) 
     self.unlearn_mac_on_port(switch, port_id)
-    self.unlearned_incoming_ports.add( (switch, port_id) )
 
   def port_down(self,dpid, port_id):
     switch = self.dpid_to_switch(dpid)
@@ -301,9 +288,6 @@ class LearningSwitchApp(frenetic.App):
       return
     self.switches[switch] = ports
     print "Updated Switches: "+str(self.switches)
-    for port_id in ports:
-      if self.edge_port(switch, port_id):
-        self.unlearned_incoming_ports.add( (switch, port_id) )
 
   # Don't remove switch info when it supposedly goes down - this happens all the time on Dell switches and it comes 
   # right back up.  
@@ -313,5 +297,5 @@ class LearningSwitchApp(frenetic.App):
 
 if __name__ == '__main__':
   print "\n\n\n*** Gates Learning Switch Application Begin"
-  app = LearningSwitchApp()
+  app = LearningSwitchApp(sys.argv[1])
   app.start_event_loop()

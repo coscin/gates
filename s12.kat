@@ -1,0 +1,4 @@
+filter vlanId = 1356 and switch = 1125908103297804 and port = 32 and ethDst = ff:ff:ff:ff:ff:ff; port := 47 |
+filter vlanId = 1356 and switch = 1125908103297804 and port = 47 and ethDst = ff:ff:ff:ff:ff:ff; port := 32 |
+filter vlanId = 1356 and switch = 1125908103297804 and port = 32 and ethSrc = 00:00:01:00:00:11; port := 47 |
+filter vlanId = 1356 and switch = 1125908103297804 and port = 47 and ethDst = 00:00:01:00:00:11; port := 32 

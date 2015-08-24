@@ -7,10 +7,14 @@
 #   sequentially renumbering them
 # - You need vlan package, via "sudo apt-get install vlan"
 # - You also need DHCP server and client, packages udhcpd and udhcpc 
-# - You need OpenVSwitch > 2.1.  Version 2.0.2, the one that comes in Ubuntu 14.04, has a 
+# - You NEED OpenVSwitch = 2.1.  Install this from mininet - util/install.sh -V 2.1.3  
+#   - Version 2.0.2, the one that comes in Ubuntu 14.04, has a 
 #   bug which sends a truncated packet with packet_in, but with buffer_id=-1 (meaning no buffer)
 #   Since you don't have all the data, it's impossible to send out the correct data in packet_out.
-#   This really affects DHCP.  
+#   This really affects DHCP. 
+#   - Version 2.3 installs a Table Miss rule to drop all packets, and you can't get rid of it.
+#   Dell switches are configured to Table-Miss to the controller, and that's REQUIRED because of
+#   the insane implementation of ACL and L2/L3 tables.  So your scripts won't work here.   
 
 import re
 import sys
@@ -87,7 +91,7 @@ def start(ip="127.0.0.1",port=6633):
     net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=False)
     c1 = net.addController('c1')
 
-    gates_agraph = pgv.AGraph("gates_topology.dot")
+    gates_agraph = pgv.AGraph("simplified_gates_topology.dot")
     for sw in gates_agraph.nodes():
         net.addSwitch(sw, dpid = hex( int(sw.attr['dpid']) )[2:])
 
@@ -96,7 +100,7 @@ def start(ip="127.0.0.1",port=6633):
         net.addLink(src_switch, dst_switch, int(link.attr['src_port']), int(link.attr['dport']) )
 
     # Only one host and an Internet Router disguised as a host for now (because it's not part of the OF network)
-    h0 = net.addHost('h0', cls=VLANHost, mac='00:00:01:00:00:10', ip='128.253.154.1', vlan=1356)
+    h0 = net.addHost('h0', cls=VLANHost, mac='d4:c9:ef:b2:1b:80', ip='128.253.154.1', vlan=1356)
     net.addLink("s_bdf", h0, 1, 0)
 
     # To test DHCP functionality, ucnomment this line and comment out the fixed IP line.  Then when mininet
@@ -108,8 +112,15 @@ def start(ip="127.0.0.1",port=6633):
     net.addLink("s_f3a", h1, 32, 0)
 
     # Client for tplink, since it's a little weird
-    h2 = net.addHost('h2', cls=VLANHost, mac='00:00:01:00:00:12', ip='128.253.154.101', vlan=1356)
-    net.addLink("s_tplink", h2, 2, 0)
+    # h2 = net.addHost('h2', cls=VLANHost, mac='00:00:01:00:00:12', ip='128.253.154.101', vlan=1356)
+    # net.addLink("s_tplink", h2, 2, 0)
+
+    h3 = net.addHost('h3', cls=VLANHost, mac='00:00:01:00:00:13', ip='128.253.154.102', vlan=1356)
+    net.addLink("s_lab_r6", h3, 1, 0)
+
+    # MAC spoofing attempt of h3
+    h4 = net.addHost('h4', cls=VLANHost, mac='00:00:01:00:00:13', ip='128.253.154.102', vlan=1356)
+    net.addLink("s_lab_r6", h4, 2, 0)
 
     ###### Start of static Mininet epilogue ######
     # Set up logging etc.
@@ -126,6 +137,6 @@ def start(ip="127.0.0.1",port=6633):
     output("Network ready\n")
     output("Press Ctrl-d or type exit to quit\n")
     CLI(net)
-    net.stop()
+    # net.stop()
 
 start()

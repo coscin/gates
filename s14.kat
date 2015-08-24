@@ -1,0 +1,4 @@
+filter (port = 32 and ethSrc = 00:00:01:00:00:11); port := 47 |
+filter (port = 32 and not (ethSrc = 00:00:01:00:00:11)) ; port := 500 |
+filter (port = 47 and ethDst = 00:00:01:00:00:11); port := 32 |
+filter (port = 47 and ethDst = ff:ff:ff:ff:ff:ff); port := 32 

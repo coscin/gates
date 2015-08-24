@@ -1,0 +1,31 @@
+drop |
+(filter switch = 243 and port = 47 and ethDst = ff:ff:ff:ff:ff:ff; port := 32 |
+ filter switch = 243 and port = 32 and ethSrc = 00:00:01:00:00:11; port := 47 |
+ filter switch = 243 and port = 47 and not (ethSrc = 00:00:01:00:00:11) and
+        ethDst = 00:00:01:00:00:11;
+ port := 32 |
+ filter switch = 224 and port = 29 and ethDst = ff:ff:ff:ff:ff:ff and
+        vlanId = 1356;
+ port := 47 |
+ filter switch = 224 and port = 47 and ethDst = ff:ff:ff:ff:ff:ff and
+        vlanId = 1356;
+ port := 29 |
+ filter vlanId = 1356 and switch = 224 and ethDst = 00:00:01:00:00:11;
+ port := 47 |
+ filter vlanId = 1356 and switch = 224 and ethDst = d4:c9:ef:b2:1b:80;
+ port := 47 |
+ filter switch = 230 and port = 49 and ethDst = ff:ff:ff:ff:ff:ff;
+ (port := 2 | port := 1) |
+ filter switch = 189 and port = 23 and ethDst = ff:ff:ff:ff:ff:ff and
+        vlanId = 1356;
+ (port := 1 | port := 45) |
+ filter switch = 189 and port = 1 and ethDst = ff:ff:ff:ff:ff:ff and
+        vlanId = 1356;
+ (port := 23 | port := 45) |
+ filter switch = 189 and port = 45 and ethDst = ff:ff:ff:ff:ff:ff and
+        vlanId = 1356;
+ (port := 23 | port := 1) |
+ filter vlanId = 1356 and switch = 189 and ethDst = 00:00:01:00:00:11;
+ port := 23 |
+ filter vlanId = 1356 and switch = 189 and ethDst = d4:c9:ef:b2:1b:80;
+ port := 1)

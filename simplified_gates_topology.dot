@@ -1,0 +1,20 @@
+/* simplified_gates_topology.dot
+   Craig Riecke, CoSciN Developer/Analyst, August, 2015
+
+   Based on gates_topology, but streamlined for easy experiments
+   */ 
+strict graph gates {
+  s_bdf [ dpid = 189 , core = true ] ;  /* BD */
+  s_f3a [ dpid = 243 ];
+  s_lab_eor [ dpid = 224, core = true ] ; /* E0 */
+  s_lab_r6  [ dpid = 230 ] ; /* E6 */
+
+  /* Floor switches are connected in a star to s_bdf */
+  s_bdf -- s_f3a [ src_port = 23, dport = 47 ];
+
+  /* Syslab switches are connected in a star to s_lab_eor */
+  s_lab_eor -- s_lab_r6  [ src_port = 29,  dport = 49 ];
+
+  /* Links between stars */
+  s_bdf -- s_lab_eor [ src_port = 45, dport = 47 ];
+}
