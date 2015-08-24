@@ -214,11 +214,7 @@ class LearningSwitchApp(frenetic.App):
       self.learn( 's_bdf', 1, 'd4:c9:ef:b2:1b:80' )
 
       # Load appropriate compiler options
-      self.config( CompilerOptions("empty", "Location < EthDst < EthSrc < Vlan < Switch", True, False, True) )
-
-      # This is bogus, but prevents a race condition in Frenetic
-      import time
-      time.sleep(5)
+      #self.config( CompilerOptions("empty", "Location < EthDst < EthSrc < Vlan < Switch", True, False, True) )
 
       print "Connected to Frenetic - Switches: "+str(self.switches)
       self.update(self.policy())
