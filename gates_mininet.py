@@ -86,6 +86,7 @@ def startDHCPserver( host, gw, dns ):
             '1>/tmp/%s-dhcp.log 2>&1  &' % host )
 
 def start(ip="127.0.0.1",port=6633):
+#def start(ip="127.0.0.1",port=6653):
 
     ctrlr = lambda n: RemoteController(n, ip=ip, port=port, inNamespace=False)
     net = Mininet(switch=OVSSwitch, controller=ctrlr, autoStaticArp=False)
@@ -111,16 +112,20 @@ def start(ip="127.0.0.1",port=6633):
     h1 = net.addHost('h1', cls=VLANHost, mac='00:00:01:00:00:11', ip='128.253.154.100', vlan=1356)
     net.addLink("s_f3a", h1, 32, 0)
 
-    # Client for tplink, since it's a little weird
-    # h2 = net.addHost('h2', cls=VLANHost, mac='00:00:01:00:00:12', ip='128.253.154.101', vlan=1356)
-    # net.addLink("s_tplink", h2, 2, 0)
+    # h4{a,b,c} are wireless nodes supposedly hooked up to a dumb AP.  You can't just hook them up
+    # to the same mininet port.  Y  
+    h4a = net.addHost('h4a', cls=VLANHost, mac='00:00:01:00:00:14', ip='128.253.154.104', vlan=1356)
+    net.addLink("s_f3a", h4a, 33, 0)
+    #net.addHost('h4b', cls=VLANHost, mac='00:00:01:00:00:14', ip='128.253.154.104', vlan=1356)
+    #net.addHost('h4c', cls=VLANHost, mac='00:00:01:00:00:14', ip='128.253.154.104', vlan=1356)
 
+    # h2 is a syslab PC
+    h2 = net.addHost('h2', cls=VLANHost, mac='00:00:01:00:00:13', ip='128.253.154.102', vlan=1356)
+    net.addLink("s_lab_r6", h2, 1, 0)
+
+    # MAC spoofing attempt of h2
     h3 = net.addHost('h3', cls=VLANHost, mac='00:00:01:00:00:13', ip='128.253.154.102', vlan=1356)
-    net.addLink("s_lab_r6", h3, 1, 0)
-
-    # MAC spoofing attempt of h3
-    h4 = net.addHost('h4', cls=VLANHost, mac='00:00:01:00:00:13', ip='128.253.154.102', vlan=1356)
-    net.addLink("s_lab_r6", h4, 2, 0)
+    net.addLink("s_lab_r6", h3, 2, 0)
 
     ###### Start of static Mininet epilogue ######
     # Set up logging etc.

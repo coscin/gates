@@ -1,0 +1,14 @@
+filter switch = 243 and port = 47 and ethDst = ff:ff:ff:ff:ff:ff;
+ (port := 33 | port := 32) |
+ filter switch = 243 and port = 33 and ethSrc = 00:00:00:00:00:15; port := 47 |
+ filter switch = 243 and port = 47 and not (ethSrc = 00:00:00:00:00:15) and
+        ethDst = 00:00:00:00:00:15;
+ port := 33 |
+ filter switch = 243 and port = 33 and ethSrc = 00:00:01:00:00:14; port := 47 |
+ filter switch = 243 and port = 47 and not (ethSrc = 00:00:01:00:00:14) and
+        ethDst = 00:00:01:00:00:14;
+ port := 33 |
+filter switch = 243 and port = 33 and ethSrc = 00:00:01:00:00:16; port := 47 |
+ filter switch = 243 and port = 47 and not (ethSrc = 00:00:01:00:00:16) and
+        ethDst = 00:00:01:00:00:16;
+ port := 33

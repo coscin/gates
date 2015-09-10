@@ -5,7 +5,7 @@
 # switch table using a fixed toplogy.
 
 # Note: I'm sure there's a nicer way to do this ...
-import sys, array
+import sys, array, logging, time
 sys.path.append('../frenetic/lang/python')
 import frenetic
 from frenetic.syntax import *
@@ -54,8 +54,8 @@ class LearningSwitchApp(frenetic.App):
 
   def __init__(self, topology_file = "gates_topology.dot"):
     frenetic.App.__init__(self) 
-
-    print "---> Reading Topology from "+topology_file
+ 
+    logging.info("---> Reading Topology from "+topology_file)
     self.agraph = pgv.AGraph(topology_file)
     for sw in self.agraph.nodes():
       dpid = str(sw.attr['dpid'])
@@ -65,7 +65,7 @@ class LearningSwitchApp(frenetic.App):
         self.core_switches.add (str(sw))
 
     # It's faster to denormalize this now
-    print "---> Remembering internal ports"
+    logging.info("---> Remembering internal ports")
     self.switch_internal_ports = { sw: set([]) for sw in self.switch_to_dpid_dict }
     for e in self.agraph.edges():
       source_sw = str(e[0])
@@ -81,7 +81,7 @@ class LearningSwitchApp(frenetic.App):
         self.port_mappings[dest_sw] = {}
       self.port_mappings[dest_sw][source_sw] = dest_port
 
-    print "---> Calculating spanning tree"
+    logging.info("---> Calculating spanning tree")
     nxgraph = nx.from_agraph(self.agraph)
     self.nx_topo = nx.minimum_spanning_tree(nxgraph)
 
@@ -108,7 +108,7 @@ class LearningSwitchApp(frenetic.App):
     return filter(lambda mac: self.hosts[mac][0] == switch, self.hosts)
 
   def learn(self, switch, port_id, mac):
-    print "Learning: "+mac+" attached to ( "+switch+", "+str(port_id)+" )"
+    logging.info("Learning: "+mac+" attached to ( "+switch+", "+str(port_id)+" )")
     # Compute next hop table: from each switch, which port do you need to go next to get to destination?
     self.nx_topo.add_node(mac)
     self.nx_topo.add_edge(switch, mac)
@@ -199,10 +199,7 @@ class LearningSwitchApp(frenetic.App):
     output_actions = [ Output(Physical(p)) for p in flood_to_ports ]
     # Only bother to send the packet out if there are ports to send it out on.
     if output_actions:
-      print "Flooding from switch "+switch+" to "+str(flood_to_ports)
       self.pkt_out(self.switch_to_dpid(switch), payload, output_actions)
-    else:
-      print "No ports to flood broadcast from "+ str(port_id) + " on "+switch+" dropping packet."
 
   def connected(self):
     def handle_current_switches(switches):
@@ -213,10 +210,7 @@ class LearningSwitchApp(frenetic.App):
       # Besides, we don't want anyone trying to spoof it.  
       self.learn( 's_bdf', 1, 'd4:c9:ef:b2:1b:80' )
 
-      # Load appropriate compiler options
-      #self.config( CompilerOptions("empty", "Location < EthDst < EthSrc < Vlan < Switch", True, False, True) )
-
-      print "Connected to Frenetic - Switches: "+str(self.switches)
+      logging.info("Connected to Frenetic - Switches: "+str(self.switches))
       self.update(self.policy())
       self.initial_config_complete = True
     # If Frenetic went down, it'll call connected() when it comes back up.  In that case, just 
@@ -224,23 +218,25 @@ class LearningSwitchApp(frenetic.App):
     if self.initial_config_complete:
       self.update(self.policy())
     else:
+      # Load appropriate compiler options
+      self.config( CompilerOptions("empty", "Location < EthDst < EthSrc < Vlan < Switch", True, False, True) )
       self.current_switches(callback=handle_current_switches) 
 
   def packet_in(self, dpid, port_id, payload):
     # If switches haven't been read in yet, don't process packet.
     if not self.initial_config_complete:
-      print "Packets received before initialization, dropping" 
+      logging.info("Packets received before initialization, dropping" )
       return
     pkt = packet.Packet(array.array('b', payload.data))
     p = get(pkt, 'ethernet')
     switch = self.dpid_to_switch(dpid)
-    print "Received "+p.src+" -> ("+str(switch)+", "+str(port_id)+") -> "+p.dst
+    logging.info("Received "+p.src+" -> ("+str(switch)+", "+str(port_id)+") -> "+p.dst)
     mac = p.src
     if mac != self.ethernet_broadcast and self.edge_port(switch, port_id):
       if mac in self.hosts:
         (last_seen_switch, last_seen_port, _) = self.hosts[mac]
         if last_seen_switch != switch or last_seen_port != port_id:
-          print "----> WARNING:  Dropping packet.  Apparent MAC spoofing of "+mac+" at "+switch+" / "+str(port_id)
+          logging.warn("Dropping packet.  Apparent MAC spoofing of "+mac+" at "+switch+" / "+str(port_id))
           return
       else:
         self.learn(switch, port_id, mac)
@@ -258,7 +254,7 @@ class LearningSwitchApp(frenetic.App):
       else:
         (dest_switch, dest_port, next_hop_table) = self.hosts[p.dst]
         next_hop_port = next_hop_table[switch]
-        print "Sending out "+switch+"/"+str(next_hop_port)
+        logging.info("Sending out "+switch+"/"+str(next_hop_port))
         self.pkt_out(dpid, payload, [Output(Physical(next_hop_port))])
 
   def unlearn_mac_on_port(self, switch, port_id):
@@ -278,20 +274,23 @@ class LearningSwitchApp(frenetic.App):
 
   def switch_up(self,dpid,ports):
     switch = self.dpid_to_switch(dpid)
-    print "Switch Up: "+switch
     # If we've seen this switch before, just return.  Otherwise add the ports to unlearned. 
     if switch in self.switches:
       return
     self.switches[switch] = ports
-    print "Updated Switches: "+str(self.switches)
+    logging.info("Updated Switches: "+str(self.switches))
 
   # Don't remove switch info when it supposedly goes down - this happens all the time on Dell switches and it comes 
   # right back up.  
   def switch_down(self,dpid):
-    switch = self.dpid_to_switch(dpid)
-    print "Switch Down: "+switch
+    pass
 
 if __name__ == '__main__':
-  print "\n\n\n*** Gates Learning Switch Application Begin"
-  app = LearningSwitchApp(sys.argv[1])
+  logging.basicConfig(stream = sys.stderr, format='%(asctime)s [%(levelname)s] %(message)s', level=logging.INFO)
+
+  logging.info("*** Gates Learning Switch Application Begin")
+  if len(sys.argv) > 1:
+    app = LearningSwitchApp(sys.argv[1])
+  else:
+    app = LearningSwitch()
   app.start_event_loop()
